@@ -609,6 +609,7 @@ io.on("connection", (socket) => {
     }
 
     if (match.phase === "playing") {
+      broadcastMatchState();
       evaluateWinner();
     } else if (match.phase === "countdown") {
       cancelCountdown();

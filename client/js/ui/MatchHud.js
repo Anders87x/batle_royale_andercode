@@ -154,7 +154,9 @@ export class MatchHud {
       );
 
       this.detailText.setText(
-        `Vivos: ${aliveCount} / ${playerCount}`
+        self?.isDead
+          ? `ESPECTADOR · Vivos: ${aliveCount} / ${playerCount}`
+          : `Vivos: ${aliveCount} / ${playerCount}`
       );
 
       return;
