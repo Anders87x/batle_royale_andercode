@@ -128,13 +128,46 @@ export class NetworkSystem {
       "connect",
       () => {
         this.setStatus(
-          "MULTIJUGADOR: CONECTADO · sincronizando...",
+          "MULTIJUGADOR: CONECTADO · registrando nombre...",
           0x86efac
+        );
+
+        this.socket.emit(
+          "player:register",
+          {
+            name:
+              window.PLAYER_NAME ||
+              this.player.name ||
+              "Jugador",
+          }
+        );
+      }
+    );
+
+    this.socket.on(
+      "player:registered",
+      (state) => {
+        this.applySelfState(
+          state
         );
 
         this.socket.emit(
           "players:sync"
         );
+      }
+    );
+
+    this.socket.on(
+      "player:name",
+      ({ id, name }) => {
+        const remote =
+          this.remotePlayers.get(
+            id
+          );
+
+        remote?.applyState({
+          name,
+        });
       }
     );
 

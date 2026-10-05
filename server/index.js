@@ -143,7 +143,8 @@ function sanitizePlayerName(value) {
 }
 
 function getUniquePlayerName(
-  requestedName
+  requestedName,
+  excludeId = null
 ) {
   const baseName =
     sanitizePlayerName(
@@ -154,9 +155,15 @@ function getUniquePlayerName(
     new Set(
       Array.from(
         players.values()
-      ).map((player) =>
-        player.name.toLowerCase()
       )
+        .filter(
+          (player) =>
+            player.id !==
+            excludeId
+        )
+        .map((player) =>
+          player.name.toLowerCase()
+        )
     );
 
   if (
@@ -991,6 +998,49 @@ io.on(
     );
 
     broadcastMatchState();
+
+    socket.on(
+      "player:register",
+      ({ name } = {}) => {
+        const current =
+          players.get(
+            socket.id
+          );
+
+        if (!current) {
+          return;
+        }
+
+        current.name =
+          getUniquePlayerName(
+            name,
+            socket.id
+          );
+
+        console.log(
+          `Nombre registrado: ${current.name} (${socket.id})`
+        );
+
+        socket.emit(
+          "player:registered",
+          publicPlayer(
+            current
+          )
+        );
+
+        socket.broadcast.emit(
+          "player:name",
+          {
+            id:
+              socket.id,
+            name:
+              current.name,
+          }
+        );
+
+        broadcastMatchState();
+      }
+    );
 
     socket.on(
       "players:sync",
