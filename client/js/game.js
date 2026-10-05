@@ -7,27 +7,16 @@ const ATTACK_DAMAGE = 25;
 const ATTACK_IMPACT_DELAY = 250;
 const DUMMY_MAX_HP = 100;
 
-// El pack de CraftPix está organizado en 4 filas:
-// fila 0 = frente / abajo
-// fila 1 = derecha
-// fila 2 = izquierda
-// fila 3 = espalda / arriba
-const DIRECTIONS = {
-  down: 0,
-  right: 1,
-  left: 2,
-  up: 3,
-};
-
-// El spritesheet de Attack usa un orden lateral distinto al de Idle/Walk:
+// Orden real de las filas del pack de CraftPix.
+// Lo validamos visualmente en Idle, Walk y Attack:
 // fila 0 = frente / abajo
 // fila 1 = izquierda
 // fila 2 = derecha
 // fila 3 = espalda / arriba
-const ATTACK_DIRECTIONS = {
+const DIRECTIONS = {
   down: 0,
-  right: 2,
   left: 1,
+  right: 2,
   up: 3,
 };
 
@@ -91,8 +80,7 @@ function createDirectionalAnimations(scene) {
     const idleStart = row * IDLE_COLUMNS;
     const idleFrameCount = IDLE_FRAMES_BY_DIRECTION[direction];
     const walkStart = row * WALK_FRAMES_PER_DIRECTION;
-    const attackRow = ATTACK_DIRECTIONS[direction];
-    const attackStart = attackRow * ATTACK_FRAMES_PER_DIRECTION;
+    const attackStart = row * ATTACK_FRAMES_PER_DIRECTION;
 
     scene.anims.create({
       key: `idle-${direction}`,
