@@ -10,6 +10,7 @@ export class LobbyEnvironment {
 
     this.createAtlasFrames();
     this.drawRoom();
+    this.createWallDecorations();
     this.createGuildExhibit();
     this.createWaitingArea();
     this.createTrainingArea();
@@ -21,7 +22,9 @@ export class LobbyEnvironment {
     // Único recorte del atlas que conservamos por ahora:
     // el esqueleto del dragón. Quitamos los recortes aproximados
     // que estaban generando objetos cortados o superpuestos.
-    texture.add("dragon-skeleton", 0, 128, 0, 224, 80);
+    // Ampliamos ligeramente el recorte para incluir la parte final
+    // de la cola que quedaba fuera del frame anterior.
+    texture.add("dragon-skeleton", 0, 128, 0, 240, 88);
   }
 
   drawRoom() {
@@ -77,6 +80,133 @@ export class LobbyEnvironment {
     );
   }
 
+  createWallDecorations() {
+    const windowPositions = [210, 430, 1010, 1230];
+
+    windowPositions.forEach((x) => {
+      this.drawWindow(x, 78);
+    });
+
+    this.drawBanner(610, 78, "A");
+    this.drawBanner(830, 78, "C");
+
+    this.drawShield(525, 88);
+    this.drawShield(915, 88);
+
+    this.drawWeaponRack(105, 118);
+    this.drawWeaponRack(WORLD_WIDTH - 105, 118);
+  }
+
+  drawWindow(x, y) {
+    const g = this.scene.add.graphics().setDepth(-5);
+
+    // Marco de madera.
+    g.fillStyle(0x4b3128, 1);
+    g.fillRoundedRect(x - 34, y - 46, 68, 92, 8);
+
+    // Piedra clara alrededor.
+    g.fillStyle(0xd7b17f, 1);
+    g.fillRoundedRect(x - 28, y - 40, 56, 80, 7);
+
+    // Cristal.
+    g.fillStyle(0x6f90a9, 1);
+    g.fillRoundedRect(x - 20, y - 31, 40, 62, 6);
+
+    // Brillo del cristal.
+    g.fillStyle(0x9fc1d6, 0.72);
+    g.fillRect(x - 14, y - 25, 8, 50);
+
+    // Divisiones.
+    g.lineStyle(4, 0x554052, 0.95);
+    g.lineBetween(x, y - 31, x, y + 31);
+    g.lineBetween(x - 20, y, x + 20, y);
+
+    // Remate superior tipo arco.
+    g.lineStyle(4, 0x4b3128, 1);
+    g.strokeRoundedRect(x - 34, y - 46, 68, 92, 8);
+  }
+
+  drawBanner(x, y, letter) {
+    const g = this.scene.add.graphics().setDepth(-4);
+
+    g.fillStyle(0x56314f, 1);
+    g.fillRect(x - 25, y - 42, 50, 76);
+
+    g.fillStyle(0xe4b449, 1);
+    g.fillTriangle(
+      x - 25,
+      y + 34,
+      x,
+      y + 54,
+      x + 25,
+      y + 34
+    );
+
+    g.lineStyle(3, 0xe8c56e, 0.95);
+    g.strokeRect(x - 25, y - 42, 50, 76);
+
+    this.scene.add
+      .text(x, y - 4, letter, {
+        fontFamily: "Arial",
+        fontSize: "26px",
+        fontStyle: "bold",
+        color: "#f8dc83",
+      })
+      .setOrigin(0.5)
+      .setDepth(-3);
+  }
+
+  drawShield(x, y) {
+    const g = this.scene.add.graphics().setDepth(-4);
+
+    g.fillStyle(0x4d566f, 1);
+    g.fillTriangle(
+      x - 23,
+      y - 25,
+      x + 23,
+      y - 25,
+      x,
+      y + 29
+    );
+
+    g.fillStyle(0x7986a8, 1);
+    g.fillTriangle(
+      x - 16,
+      y - 18,
+      x + 16,
+      y - 18,
+      x,
+      y + 18
+    );
+
+    g.lineStyle(3, 0xe0bd67, 0.9);
+    g.lineBetween(x, y - 20, x, y + 17);
+    g.lineBetween(x - 15, y - 5, x + 15, y - 5);
+  }
+
+  drawWeaponRack(x, y) {
+    const g = this.scene.add.graphics().setDepth(-4);
+
+    g.fillStyle(0x583a2e, 1);
+    g.fillRoundedRect(x - 42, y - 29, 84, 58, 7);
+
+    g.lineStyle(4, 0x30211f, 1);
+    g.strokeRoundedRect(x - 42, y - 29, 84, 58, 7);
+
+    // Espadas cruzadas.
+    g.lineStyle(5, 0xb8c5cf, 1);
+    g.lineBetween(x - 23, y + 17, x + 20, y - 18);
+    g.lineBetween(x + 23, y + 17, x - 20, y - 18);
+
+    g.lineStyle(5, 0x8b603a, 1);
+    g.lineBetween(x - 28, y + 22, x - 17, y + 11);
+    g.lineBetween(x + 28, y + 22, x + 17, y + 11);
+
+    g.lineStyle(3, 0xe0b75b, 1);
+    g.lineBetween(x - 29, y + 9, x - 17, y + 21);
+    g.lineBetween(x + 29, y + 9, x + 17, y + 21);
+  }
+
   createGuildExhibit() {
     const centerX = WORLD_WIDTH / 2;
 
@@ -108,7 +238,7 @@ export class LobbyEnvironment {
 
     this.scene.add
       .image(centerX, 302, "lobby-interior", "dragon-skeleton")
-      .setScale(2.15)
+      .setScale(2.05)
       .setDepth(1);
 
     this.scene.add
