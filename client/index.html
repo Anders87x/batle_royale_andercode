@@ -3,45 +3,437 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta
+    name="description"
+    content="AnderCode Battle Royale: combate PvP en tiempo real, habilidades, zona segura y partidas rápidas."
+  >
   <title>AnderCode Battle Royale</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+  <div class="site-noise" aria-hidden="true"></div>
+
+  <main id="landing-page" class="landing-page">
+    <header class="site-header">
+      <a class="brand" href="#inicio" aria-label="AnderCode Battle Royale">
+        <span class="brand-mark">AC</span>
+        <span class="brand-copy">
+          <strong>ANDERCODE</strong>
+          <small>BATTLE ROYALE</small>
+        </span>
+      </a>
+
+      <nav class="site-nav" aria-label="Navegación principal">
+        <a href="#como-jugar">Cómo jugar</a>
+        <a href="#habilidades">Habilidades</a>
+        <a href="#creador">Creador</a>
+      </nav>
+
+      <button class="btn btn-small js-open-entry" type="button">
+        Jugar ahora
+      </button>
+    </header>
+
+    <section id="inicio" class="hero section-shell">
+      <div class="hero-copy">
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          Proyecto multijugador en desarrollo
+        </div>
+
+        <p class="kicker">ENTRA · SOBREVIVE · DOMINA LA ZONA</p>
+
+        <h1>
+          Un Battle Royale pixel art
+          <span>hecho desde cero.</span>
+        </h1>
+
+        <p class="hero-lead">
+          Combate contra otros jugadores en tiempo real, usa habilidades,
+          escapa de la zona mortal y conviértete en el último sobreviviente
+          de las Tierras de los No Muertos.
+        </p>
+
+        <div class="hero-actions">
+          <button class="btn btn-primary js-open-entry" type="button">
+            <span>⚔</span>
+            Entrar a la batalla
+          </button>
+
+          <a class="btn btn-secondary" href="#como-jugar">
+            Ver cómo se juega
+          </a>
+        </div>
+
+        <div class="hero-stats" aria-label="Características principales">
+          <div>
+            <strong>PvP</strong>
+            <span>Tiempo real</span>
+          </div>
+          <div>
+            <strong>3</strong>
+            <span>Habilidades</span>
+          </div>
+          <div>
+            <strong>1</strong>
+            <span>Último en pie</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="Vista conceptual del combate">
+        <div class="arena-orbit orbit-one"></div>
+        <div class="arena-orbit orbit-two"></div>
+
+        <div class="hero-card">
+          <div class="hero-card-top">
+            <span class="live-badge">● EN VIVO</span>
+            <span class="hero-card-mode">BATTLE ROYALE</span>
+          </div>
+
+          <div class="battle-preview">
+            <span class="preview-zone"></span>
+
+            <div class="preview-player preview-player-one">
+              <span class="preview-hp"></span>
+              <span class="preview-avatar">A</span>
+            </div>
+
+            <div class="preview-player preview-player-two">
+              <span class="preview-hp"></span>
+              <span class="preview-avatar">B</span>
+            </div>
+
+            <div class="preview-skull">☠</div>
+          </div>
+
+          <div class="hero-card-bottom">
+            <span>VIVOS: <strong>2</strong></span>
+            <span>ZONA: <strong>F2/3</strong></span>
+            <span>KILLS: <strong>1</strong></span>
+          </div>
+        </div>
+
+        <img
+          class="floating-skill skill-one"
+          src="/assets/ui/abilities/attack1.png"
+          alt=""
+          aria-hidden="true"
+        >
+        <img
+          class="floating-skill skill-two"
+          src="/assets/ui/abilities/attack2.png"
+          alt=""
+          aria-hidden="true"
+        >
+        <img
+          class="floating-skill skill-three"
+          src="/assets/ui/abilities/attack3.png"
+          alt=""
+          aria-hidden="true"
+        >
+      </div>
+    </section>
+
+    <section class="feature-strip">
+      <div class="feature-strip-inner">
+        <span>⚡ Combate rápido</span>
+        <span>◉ Zona dinámica</span>
+        <span>☠ Eliminación permanente</span>
+        <span>👁 Modo espectador</span>
+        <span>🏆 Victoria del último jugador</span>
+      </div>
+    </section>
+
+    <section id="como-jugar" class="content-section section-shell">
+      <div class="section-heading">
+        <p class="kicker">APRENDE EN SEGUNDOS</p>
+        <h2>Cómo se juega</h2>
+        <p>
+          Entra al lobby, marca que estás listo y domina movimiento,
+          distancia y cooldowns antes de que la zona te obligue a pelear.
+        </p>
+      </div>
+
+      <div class="steps-grid">
+        <article class="step-card">
+          <span class="step-number">01</span>
+          <div class="step-icon">⌨</div>
+          <h3>Muévete</h3>
+          <p>
+            Usa <strong>W A S D</strong> para recorrer el mapa,
+            buscar cobertura y reposicionarte.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <span class="step-number">02</span>
+          <div class="step-icon">R</div>
+          <h3>Prepárate</h3>
+          <p>
+            En el lobby pulsa <strong>R</strong>. Cuando todos estén listos,
+            empieza la cuenta regresiva.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <span class="step-number">03</span>
+          <div class="step-icon">⚔</div>
+          <h3>Combate</h3>
+          <p>
+            Ataca con <strong>CLICK IZQ. / SPACE</strong> y combina
+            tus habilidades con <strong>Q</strong> y <strong>E</strong>.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <span class="step-number">04</span>
+          <div class="step-icon">◉</div>
+          <h3>Sobrevive</h3>
+          <p>
+            Mantente dentro de la zona. Cada fase se vuelve más pequeña
+            y causa más daño.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section id="habilidades" class="content-section skills-section">
+      <div class="section-shell">
+        <div class="section-heading section-heading-centered">
+          <p class="kicker">TU KIT DE COMBATE</p>
+          <h2>Tres ataques. Una sola vida.</h2>
+          <p>
+            Aprende cuándo atacar, cuándo entrar y cuándo guardar tu habilidad
+            para el momento decisivo.
+          </p>
+        </div>
+
+        <div class="skills-grid">
+          <article class="skill-card">
+            <div class="skill-icon-wrap">
+              <img src="/assets/ui/abilities/attack1.png" alt="Ataque normal">
+              <span class="key-chip">LMB / SPACE</span>
+            </div>
+            <div>
+              <span class="skill-type">BÁSICO</span>
+              <h3>Ataque normal</h3>
+              <p>
+                Golpe frontal rápido para presionar, rematar y castigar
+                enemigos cercanos.
+              </p>
+            </div>
+            <div class="skill-meta">
+              <span><small>DAÑO</small><strong>25</strong></span>
+              <span><small>COOLDOWN</small><strong>0.8s</strong></span>
+            </div>
+          </article>
+
+          <article class="skill-card skill-card-featured">
+            <div class="skill-icon-wrap">
+              <img src="/assets/ui/abilities/attack2.png" alt="Embestida">
+              <span class="key-chip">Q</span>
+            </div>
+            <div>
+              <span class="skill-type">MOVILIDAD</span>
+              <h3>Embestida</h3>
+              <p>
+                Avanza con fuerza hacia delante, cierra distancias y golpea
+                con mayor impacto.
+              </p>
+            </div>
+            <div class="skill-meta">
+              <span><small>DAÑO</small><strong>35</strong></span>
+              <span><small>COOLDOWN</small><strong>4s</strong></span>
+            </div>
+          </article>
+
+          <article class="skill-card">
+            <div class="skill-icon-wrap">
+              <img src="/assets/ui/abilities/attack3.png" alt="Giro 360 grados">
+              <span class="key-chip">E</span>
+            </div>
+            <div>
+              <span class="skill-type">ÁREA</span>
+              <h3>Giro 360°</h3>
+              <p>
+                Golpea alrededor de tu personaje y castiga a cualquiera
+                demasiado cerca.
+              </p>
+            </div>
+            <div class="skill-meta">
+              <span><small>DAÑO</small><strong>30</strong></span>
+              <span><small>COOLDOWN</small><strong>7s</strong></span>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section section-shell">
+      <div class="battle-flow">
+        <div class="battle-flow-copy">
+          <p class="kicker">EL CICLO DE LA PARTIDA</p>
+          <h2>Del lobby a la victoria.</h2>
+          <p>
+            Una partida está diseñada para llevarte rápido a la acción.
+            Prepárate, entra a la arena, sobrevive a las fases de la zona
+            y observa la batalla si eres eliminado.
+          </p>
+
+          <button class="btn btn-primary js-open-entry" type="button">
+            Probar una partida
+          </button>
+        </div>
+
+        <div class="flow-list">
+          <div class="flow-item">
+            <span>01</span>
+            <div>
+              <strong>Lobby</strong>
+              <small>Ingresa tu nombre y espera rivales.</small>
+            </div>
+          </div>
+          <div class="flow-item">
+            <span>02</span>
+            <div>
+              <strong>Ready + countdown</strong>
+              <small>Todos listos. 3, 2, 1… batalla.</small>
+            </div>
+          </div>
+          <div class="flow-item">
+            <span>03</span>
+            <div>
+              <strong>Zona segura</strong>
+              <small>Tres fases cada vez más peligrosas.</small>
+            </div>
+          </div>
+          <div class="flow-item">
+            <span>04</span>
+            <div>
+              <strong>Último en pie</strong>
+              <small>El sobreviviente gana la ronda.</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="creador" class="creator-section">
+      <div class="section-shell creator-layout">
+        <div class="creator-monogram" aria-hidden="true">
+          <span>AB</span>
+        </div>
+
+        <div class="creator-copy">
+          <p class="kicker">DETRÁS DEL PROYECTO</p>
+          <h2>Creado por Anderson Bastidas · AnderCode</h2>
+          <p>
+            Este Battle Royale forma parte de un proyecto práctico de desarrollo
+            de videojuegos y programación: construir, probar, equivocarse,
+            mejorar y convertir cada sistema en una experiencia jugable real.
+          </p>
+          <p>
+            Puedes conocer más proyectos, cursos y contenido de programación
+            en mi sitio web.
+          </p>
+
+          <div class="creator-actions">
+            <a
+              class="btn btn-secondary"
+              href="https://anderson-bastidas.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Visitar anderson-bastidas.com
+            </a>
+
+            <button class="btn btn-primary js-open-entry" type="button">
+              Jugar Battle Royale
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="final-cta section-shell">
+      <div>
+        <p class="kicker">¿LISTO PARA ENTRAR?</p>
+        <h2>Tu nombre será lo último que verán tus rivales.</h2>
+      </div>
+
+      <button class="btn btn-primary btn-large js-open-entry" type="button">
+        Entrar al lobby
+      </button>
+    </section>
+
+    <footer class="site-footer section-shell">
+      <div>
+        <strong>AnderCode Battle Royale</strong>
+        <span>Proyecto en desarrollo.</span>
+      </div>
+
+      <a
+        href="https://anderson-bastidas.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        anderson-bastidas.com
+      </a>
+    </footer>
+  </main>
+
   <div
     id="player-entry"
-    class="player-entry"
+    class="player-entry is-hidden"
     aria-modal="true"
     role="dialog"
+    aria-labelledby="player-entry-title"
   >
+    <div class="entry-backdrop js-close-entry"></div>
+
     <form
       id="player-entry-form"
       class="player-entry-card"
       autocomplete="off"
     >
+      <button
+        class="entry-close js-close-entry"
+        type="button"
+        aria-label="Cerrar"
+      >
+        ×
+      </button>
+
+      <div class="entry-badge">AC</div>
+
       <p class="player-entry-eyebrow">
         ANDERCODE BATTLE ROYALE
       </p>
 
-      <h2>¿Cómo te llamas?</h2>
+      <h2 id="player-entry-title">Elige tu nombre</h2>
 
       <p class="player-entry-copy">
-        Este nombre aparecerá sobre tu personaje para que los demás jugadores puedan distinguirte.
+        Así podrán reconocerte en el lobby, el combate y el kill feed.
       </p>
 
       <label for="player-name">
         Nombre del jugador
       </label>
 
-      <input
-        id="player-name"
-        name="playerName"
-        type="text"
-        minlength="2"
-        maxlength="16"
-        placeholder="Ej. Ander"
-        spellcheck="false"
-        required
-      >
+      <div class="entry-input-wrap">
+        <span>⚔</span>
+        <input
+          id="player-name"
+          name="playerName"
+          type="text"
+          minlength="2"
+          maxlength="16"
+          placeholder="Ej. Ander"
+          spellcheck="false"
+          required
+        >
+      </div>
 
       <p
         id="player-name-error"
@@ -49,21 +441,25 @@
         aria-live="polite"
       ></p>
 
-      <button type="submit">
+      <button class="btn btn-primary entry-submit" type="submit">
         Entrar al lobby
       </button>
 
       <small>
-        Máximo 16 caracteres
+        Máximo 16 caracteres · podrás distinguirte de los demás jugadores.
       </small>
     </form>
   </div>
 
-  <main class="game-page">
+  <main id="game-page" class="game-page is-hidden">
     <section class="game-header">
-      <p class="eyebrow">AnderCode Battle Royale</p>
-      <h1>Lobby del gremio</h1>
-      <p>Lobby de espera, arena PvP y zona segura dinámica.</p>
+      <div>
+        <p class="eyebrow">AnderCode Battle Royale</p>
+        <h1>Lobby del gremio</h1>
+        <p>Lobby de espera, arena PvP y zona segura dinámica.</p>
+      </div>
+
+      <span class="game-build">ALPHA</span>
     </section>
 
     <section class="game-shell">
