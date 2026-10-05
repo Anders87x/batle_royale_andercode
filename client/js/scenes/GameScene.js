@@ -14,6 +14,7 @@ import { NetworkSystem } from "../systems/NetworkSystem.js";
 import { AbilityHud } from "../ui/AbilityHud.js";
 import { PlayerHud } from "../ui/PlayerHud.js";
 import { LobbyEnvironment } from "../world/LobbyEnvironment.js";
+import { ArenaEnvironment } from "../world/ArenaEnvironment.js";
 
 const Phaser = window.Phaser;
 
@@ -146,6 +147,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.lobby = new LobbyEnvironment(this);
+    this.arena = new ArenaEnvironment(this);
 
     this.player = new Player(
       this,
@@ -180,11 +182,16 @@ export class GameScene extends Phaser.Scene {
       this.trainingEnemy,
     ];
 
+    const environmentBlockers = [
+      ...this.lobby.getBlockers(),
+      ...this.arena.getBlockers(),
+    ];
+
     this.collisionSystem = new CollisionSystem(
       this,
       this.player,
       this.trainingDummies,
-      this.lobby.getBlockers()
+      environmentBlockers
     );
 
     this.combatEffectSystem = new CombatEffectSystem(

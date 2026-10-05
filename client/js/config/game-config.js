@@ -3,7 +3,10 @@ const Phaser = window.Phaser;
 export const GAME_WIDTH = 960;
 export const GAME_HEIGHT = 540;
 
-export const WORLD_WIDTH = 1440;
+export const LOBBY_WIDTH = 1440;
+export const ARENA_X = 1600;
+export const ARENA_WIDTH = 1440;
+export const WORLD_WIDTH = 3200;
 export const WORLD_HEIGHT = 900;
 
 export const FRAME_SIZE = 64;

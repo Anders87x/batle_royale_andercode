@@ -14,11 +14,29 @@ const MATCH_MIN_PLAYERS = 2;
 const COUNTDOWN_MS = 3000;
 const RETURN_TO_LOBBY_MS = 5000;
 
-const WORLD_BOUNDS = {
+const LOBBY_BOUNDS = {
   minX: 40,
   maxX: 1400,
   minY: 184,
   maxY: 868,
+};
+
+const ARENA_BOUNDS = {
+  minX: 1640,
+  maxX: 3000,
+  minY: 40,
+  maxY: 860,
+};
+
+const ZONE_CONFIG = {
+  centerX: 2320,
+  centerY: 450,
+  startRadius: 390,
+  endRadius: 120,
+  waitMs: 10000,
+  shrinkMs: 45000,
+  damage: 5,
+  damageIntervalMs: 1000,
 };
 
 const ABILITIES = {
@@ -43,32 +61,86 @@ const match = {
   countdownEndsAt: null,
   winnerId: null,
   returnToLobbyAt: null,
+  zone: {
+    active: false,
+    centerX: ZONE_CONFIG.centerX,
+    centerY: ZONE_CONFIG.centerY,
+    startRadius: ZONE_CONFIG.startRadius,
+    endRadius: ZONE_CONFIG.endRadius,
+    shrinkStartsAt: null,
+    shrinkEndsAt: null,
+    damage: ZONE_CONFIG.damage,
+    damageIntervalMs:
+      ZONE_CONFIG.damageIntervalMs,
+  },
 };
 
 let countdownTimer = null;
 let returnToLobbyTimer = null;
+let nextZoneDamageAt = 0;
 
 app.get("/", (_req, res) => {
-  res.sendFile(path.join(CLIENT_PATH, "index.html"));
+  res.sendFile(
+    path.join(
+      CLIENT_PATH,
+      "index.html"
+    )
+  );
 });
 
-app.use(express.static(CLIENT_PATH));
+app.use(
+  express.static(CLIENT_PATH)
+);
 
 function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
+  return Math.max(
+    min,
+    Math.min(max, value)
+  );
 }
 
-function getSpawn(index) {
+function getLobbySpawn(index) {
   return {
     x: 545 + (index % 4) * 105,
-    y: 650 + Math.floor(index / 4) * 95,
+    y:
+      650 +
+      Math.floor(index / 4) * 95,
   };
 }
 
+function getArenaSpawn(index) {
+  const spawns = [
+    { x: 1800, y: 230 },
+    { x: 2840, y: 670 },
+    { x: 1800, y: 670 },
+    { x: 2840, y: 230 },
+    { x: 2320, y: 180 },
+    { x: 2320, y: 720 },
+    { x: 1960, y: 450 },
+    { x: 2680, y: 450 },
+  ];
+
+  return spawns[
+    index % spawns.length
+  ];
+}
+
 function sanitizeFacing(facing) {
-  return ["up", "down", "left", "right"].includes(facing)
+  return [
+    "up",
+    "down",
+    "left",
+    "right",
+  ].includes(facing)
     ? facing
     : "down";
+}
+
+function getCurrentBounds() {
+  return match.phase === "playing" ||
+    match.phase === "finished"
+    ? ARENA_BOUNDS
+    : LOBBY_BOUNDS;
 }
 
 function publicPlayer(player) {
@@ -81,35 +153,59 @@ function publicPlayer(player) {
     hp: player.hp,
     isDead: player.isDead,
     ready: player.ready,
+    kills: player.kills,
   };
 }
 
 function getPublicPlayers() {
-  return Array.from(players.values()).map(publicPlayer);
+  return Array.from(
+    players.values()
+  ).map(publicPlayer);
 }
 
 function getMatchState() {
   return {
     phase: match.phase,
-    countdownEndsAt: match.countdownEndsAt,
+    countdownEndsAt:
+      match.countdownEndsAt,
     winnerId: match.winnerId,
-    returnToLobbyAt: match.returnToLobbyAt,
-    minPlayers: MATCH_MIN_PLAYERS,
-    players: getPublicPlayers(),
+    returnToLobbyAt:
+      match.returnToLobbyAt,
+    minPlayers:
+      MATCH_MIN_PLAYERS,
+    zone: {
+      ...match.zone,
+    },
+    players:
+      getPublicPlayers(),
   };
 }
 
 function broadcastMatchState() {
-  io.emit("match:state", getMatchState());
-  io.emit("players:count", players.size);
+  io.emit(
+    "match:state",
+    getMatchState()
+  );
+
+  io.emit(
+    "players:count",
+    players.size
+  );
 }
 
 function broadcastPlayerReset() {
-  io.emit("match:players-reset", getPublicPlayers());
+  io.emit(
+    "match:players-reset",
+    getPublicPlayers()
+  );
 }
 
-function resetPlayerForRound(player, index) {
-  const spawn = getSpawn(index);
+function resetPlayerForLobby(
+  player,
+  index
+) {
+  const spawn =
+    getLobbySpawn(index);
 
   player.x = spawn.x;
   player.y = spawn.y;
@@ -117,6 +213,33 @@ function resetPlayerForRound(player, index) {
   player.moving = false;
   player.hp = 100;
   player.isDead = false;
+  player.ready = false;
+  player.kills = 0;
+  player.cooldownEnds = {
+    attack1: 0,
+    attack2: 0,
+    attack3: 0,
+  };
+}
+
+function resetPlayerForArena(
+  player,
+  index
+) {
+  const spawn =
+    getArenaSpawn(index);
+
+  player.x = spawn.x;
+  player.y = spawn.y;
+  player.facing =
+    index % 2 === 0
+      ? "right"
+      : "left";
+  player.moving = false;
+  player.hp = 100;
+  player.isDead = false;
+  player.ready = false;
+  player.kills = 0;
   player.cooldownEnds = {
     attack1: 0,
     attack2: 0,
@@ -125,17 +248,138 @@ function resetPlayerForRound(player, index) {
 }
 
 function clearCountdownTimer() {
-  if (countdownTimer) {
-    clearTimeout(countdownTimer);
-    countdownTimer = null;
+  if (!countdownTimer) {
+    return;
   }
+
+  clearTimeout(
+    countdownTimer
+  );
+
+  countdownTimer = null;
 }
 
 function clearReturnTimer() {
-  if (returnToLobbyTimer) {
-    clearTimeout(returnToLobbyTimer);
-    returnToLobbyTimer = null;
+  if (!returnToLobbyTimer) {
+    return;
   }
+
+  clearTimeout(
+    returnToLobbyTimer
+  );
+
+  returnToLobbyTimer = null;
+}
+
+function resetZone() {
+  match.zone = {
+    active: false,
+    centerX:
+      ZONE_CONFIG.centerX,
+    centerY:
+      ZONE_CONFIG.centerY,
+    startRadius:
+      ZONE_CONFIG.startRadius,
+    endRadius:
+      ZONE_CONFIG.endRadius,
+    shrinkStartsAt: null,
+    shrinkEndsAt: null,
+    damage:
+      ZONE_CONFIG.damage,
+    damageIntervalMs:
+      ZONE_CONFIG.damageIntervalMs,
+  };
+
+  nextZoneDamageAt = 0;
+}
+
+function startZone() {
+  const now = Date.now();
+
+  match.zone = {
+    active: true,
+    centerX:
+      ZONE_CONFIG.centerX,
+    centerY:
+      ZONE_CONFIG.centerY,
+    startRadius:
+      ZONE_CONFIG.startRadius,
+    endRadius:
+      ZONE_CONFIG.endRadius,
+    shrinkStartsAt:
+      now + ZONE_CONFIG.waitMs,
+    shrinkEndsAt:
+      now +
+      ZONE_CONFIG.waitMs +
+      ZONE_CONFIG.shrinkMs,
+    damage:
+      ZONE_CONFIG.damage,
+    damageIntervalMs:
+      ZONE_CONFIG.damageIntervalMs,
+  };
+
+  nextZoneDamageAt =
+    now +
+    ZONE_CONFIG.damageIntervalMs;
+}
+
+function getZoneRadius(now) {
+  const zone = match.zone;
+
+  if (!zone.active) {
+    return 0;
+  }
+
+  if (
+    !zone.shrinkStartsAt ||
+    now <= zone.shrinkStartsAt
+  ) {
+    return zone.startRadius;
+  }
+
+  if (
+    !zone.shrinkEndsAt ||
+    now >= zone.shrinkEndsAt
+  ) {
+    return zone.endRadius;
+  }
+
+  const progress =
+    (now - zone.shrinkStartsAt) /
+    (
+      zone.shrinkEndsAt -
+      zone.shrinkStartsAt
+    );
+
+  return (
+    zone.startRadius +
+    (
+      zone.endRadius -
+      zone.startRadius
+    ) *
+      Math.max(
+        0,
+        Math.min(1, progress)
+      )
+  );
+}
+
+function isOutsideZone(
+  player,
+  radius
+) {
+  const dx =
+    player.x -
+    match.zone.centerX;
+
+  const dy =
+    player.y -
+    match.zone.centerY;
+
+  return (
+    Math.hypot(dx, dy) >
+    radius
+  );
 }
 
 function cancelCountdown() {
@@ -146,25 +390,38 @@ function cancelCountdown() {
   match.winnerId = null;
   match.returnToLobbyAt = null;
 
+  resetZone();
   broadcastMatchState();
 }
 
 function allPlayersReady() {
   return (
-    players.size >= MATCH_MIN_PLAYERS &&
-    Array.from(players.values()).every(
-      (player) => player.ready
+    players.size >=
+      MATCH_MIN_PLAYERS &&
+    Array.from(
+      players.values()
+    ).every(
+      (player) =>
+        player.ready
     )
   );
 }
 
 function maybeStartCountdown() {
-  if (match.phase === "playing" || match.phase === "finished") {
+  if (
+    match.phase ===
+      "playing" ||
+    match.phase ===
+      "finished"
+  ) {
     return;
   }
 
   if (!allPlayersReady()) {
-    if (match.phase === "countdown") {
+    if (
+      match.phase ===
+      "countdown"
+    ) {
       cancelCountdown();
     } else {
       broadcastMatchState();
@@ -173,27 +430,38 @@ function maybeStartCountdown() {
     return;
   }
 
-  if (match.phase === "countdown") {
+  if (
+    match.phase ===
+    "countdown"
+  ) {
     return;
   }
 
-  match.phase = "countdown";
-  match.countdownEndsAt = Date.now() + COUNTDOWN_MS;
+  match.phase =
+    "countdown";
+
+  match.countdownEndsAt =
+    Date.now() +
+    COUNTDOWN_MS;
+
   match.winnerId = null;
   match.returnToLobbyAt = null;
 
   broadcastMatchState();
 
-  countdownTimer = setTimeout(() => {
-    countdownTimer = null;
+  countdownTimer =
+    setTimeout(() => {
+      countdownTimer = null;
 
-    if (!allPlayersReady()) {
-      cancelCountdown();
-      return;
-    }
+      if (
+        !allPlayersReady()
+      ) {
+        cancelCountdown();
+        return;
+      }
 
-    startMatch();
-  }, COUNTDOWN_MS);
+      startMatch();
+    }, COUNTDOWN_MS);
 }
 
 function startMatch() {
@@ -205,35 +473,52 @@ function startMatch() {
   match.winnerId = null;
   match.returnToLobbyAt = null;
 
-  Array.from(players.values()).forEach(
+  Array.from(
+    players.values()
+  ).forEach(
     (player, index) => {
-      resetPlayerForRound(player, index);
-      player.ready = false;
+      resetPlayerForArena(
+        player,
+        index
+      );
     }
   );
 
+  startZone();
   broadcastPlayerReset();
   broadcastMatchState();
 }
 
-function finishMatch(winnerId) {
-  if (match.phase !== "playing") {
+function finishMatch(
+  winnerId
+) {
+  if (
+    match.phase !==
+    "playing"
+  ) {
     return;
   }
 
   match.phase = "finished";
   match.countdownEndsAt = null;
-  match.winnerId = winnerId || null;
+  match.winnerId =
+    winnerId || null;
+
   match.returnToLobbyAt =
-    Date.now() + RETURN_TO_LOBBY_MS;
+    Date.now() +
+    RETURN_TO_LOBBY_MS;
+
+  match.zone.active = false;
 
   broadcastMatchState();
 
   clearReturnTimer();
-  returnToLobbyTimer = setTimeout(() => {
-    returnToLobbyTimer = null;
-    returnToLobby();
-  }, RETURN_TO_LOBBY_MS);
+
+  returnToLobbyTimer =
+    setTimeout(() => {
+      returnToLobbyTimer = null;
+      returnToLobby();
+    }, RETURN_TO_LOBBY_MS);
 }
 
 function returnToLobby() {
@@ -245,10 +530,16 @@ function returnToLobby() {
   match.winnerId = null;
   match.returnToLobbyAt = null;
 
-  Array.from(players.values()).forEach(
+  resetZone();
+
+  Array.from(
+    players.values()
+  ).forEach(
     (player, index) => {
-      resetPlayerForRound(player, index);
-      player.ready = false;
+      resetPlayerForLobby(
+        player,
+        index
+      );
     }
   );
 
@@ -257,15 +548,24 @@ function returnToLobby() {
 }
 
 function evaluateWinner() {
-  if (match.phase !== "playing") {
+  if (
+    match.phase !==
+    "playing"
+  ) {
     return;
   }
 
-  const alivePlayers = Array.from(
-    players.values()
-  ).filter((player) => !player.isDead);
+  const alivePlayers =
+    Array.from(
+      players.values()
+    ).filter(
+      (player) =>
+        !player.isDead
+    );
 
-  if (alivePlayers.length <= 1) {
+  if (
+    alivePlayers.length <= 1
+  ) {
     finishMatch(
       alivePlayers.length === 1
         ? alivePlayers[0].id
@@ -274,63 +574,124 @@ function evaluateWinner() {
   }
 }
 
-function isInsideRect(px, py, rect, padding = 24) {
+function isInsideRect(
+  px,
+  py,
+  rect,
+  padding = 24
+) {
   return (
-    px >= rect.x - padding &&
-    px <= rect.x + rect.width + padding &&
-    py >= rect.y - padding &&
-    py <= rect.y + rect.height + padding
+    px >=
+      rect.x - padding &&
+    px <=
+      rect.x +
+        rect.width +
+        padding &&
+    py >=
+      rect.y - padding &&
+    py <=
+      rect.y +
+        rect.height +
+        padding
   );
 }
 
-function attackHits(attacker, target, abilityName) {
+function attackHits(
+  attacker,
+  target,
+  abilityName
+) {
   const { x, y } = attacker;
-  const facing = sanitizeFacing(attacker.facing);
 
-  if (abilityName === "attack3") {
-    const dx = target.x - x;
-    const dy = target.y - y;
+  const facing =
+    sanitizeFacing(
+      attacker.facing
+    );
 
-    return Math.hypot(dx, dy) <= 140;
+  if (
+    abilityName ===
+    "attack3"
+  ) {
+    const dx =
+      target.x - x;
+
+    const dy =
+      target.y - y;
+
+    return (
+      Math.hypot(dx, dy) <=
+      140
+    );
   }
 
-  if (abilityName === "attack2") {
+  if (
+    abilityName ===
+    "attack2"
+  ) {
     const range = 220;
     const thickness = 72;
 
     if (facing === "right") {
-      return isInsideRect(target.x, target.y, {
-        x,
-        y: y - thickness / 2,
-        width: range,
-        height: thickness,
-      });
+      return isInsideRect(
+        target.x,
+        target.y,
+        {
+          x,
+          y:
+            y -
+            thickness / 2,
+          width: range,
+          height:
+            thickness,
+        }
+      );
     }
 
     if (facing === "left") {
-      return isInsideRect(target.x, target.y, {
-        x: x - range,
-        y: y - thickness / 2,
-        width: range,
-        height: thickness,
-      });
+      return isInsideRect(
+        target.x,
+        target.y,
+        {
+          x: x - range,
+          y:
+            y -
+            thickness / 2,
+          width: range,
+          height:
+            thickness,
+        }
+      );
     }
 
     if (facing === "down") {
-      return isInsideRect(target.x, target.y, {
-        x: x - thickness / 2,
-        y,
-        width: thickness,
-        height: range,
-      });
+      return isInsideRect(
+        target.x,
+        target.y,
+        {
+          x:
+            x -
+            thickness / 2,
+          y,
+          width:
+            thickness,
+          height: range,
+        }
+      );
     }
 
-    return isInsideRect(target.x, target.y, {
-      x: x - thickness / 2,
-      y: y - range,
-      width: thickness,
-      height: range,
-    });
+    return isInsideRect(
+      target.x,
+      target.y,
+      {
+        x:
+          x -
+          thickness / 2,
+        y: y - range,
+        width:
+          thickness,
+        height: range,
+      }
+    );
   }
 
   const offset = 80;
@@ -340,299 +701,615 @@ function attackHits(attacker, target, abilityName) {
   const verticalHeight = 110;
 
   if (facing === "right") {
-    return isInsideRect(target.x, target.y, {
-      x: x + offset - horizontalWidth / 2,
-      y: y - horizontalHeight / 2,
-      width: horizontalWidth,
-      height: horizontalHeight,
-    });
+    return isInsideRect(
+      target.x,
+      target.y,
+      {
+        x:
+          x +
+          offset -
+          horizontalWidth / 2,
+        y:
+          y -
+          horizontalHeight / 2,
+        width:
+          horizontalWidth,
+        height:
+          horizontalHeight,
+      }
+    );
   }
 
   if (facing === "left") {
-    return isInsideRect(target.x, target.y, {
-      x: x - offset - horizontalWidth / 2,
-      y: y - horizontalHeight / 2,
-      width: horizontalWidth,
-      height: horizontalHeight,
-    });
+    return isInsideRect(
+      target.x,
+      target.y,
+      {
+        x:
+          x -
+          offset -
+          horizontalWidth / 2,
+        y:
+          y -
+          horizontalHeight / 2,
+        width:
+          horizontalWidth,
+        height:
+          horizontalHeight,
+      }
+    );
   }
 
   if (facing === "down") {
-    return isInsideRect(target.x, target.y, {
-      x: x - verticalWidth / 2,
-      y: y + offset - verticalHeight / 2,
-      width: verticalWidth,
-      height: verticalHeight,
-    });
-  }
-
-  return isInsideRect(target.x, target.y, {
-    x: x - verticalWidth / 2,
-    y: y - offset - verticalHeight / 2,
-    width: verticalWidth,
-    height: verticalHeight,
-  });
-}
-
-io.on("connection", (socket) => {
-  if (match.phase === "countdown") {
-    cancelCountdown();
-  }
-
-  const spawn = getSpawn(players.size);
-  const joinsAsSpectator =
-    match.phase === "playing" ||
-    match.phase === "finished";
-
-  const player = {
-    id: socket.id,
-    x: spawn.x,
-    y: spawn.y,
-    facing: "down",
-    moving: false,
-    hp: joinsAsSpectator ? 0 : 100,
-    isDead: joinsAsSpectator,
-    ready: false,
-    cooldownEnds: {
-      attack1: 0,
-      attack2: 0,
-      attack3: 0,
-    },
-  };
-
-  players.set(socket.id, player);
-
-  console.log(
-    `Jugador conectado: ${socket.id} · Total: ${players.size}`
-  );
-
-  socket.broadcast.emit(
-    "player:joined",
-    publicPlayer(player)
-  );
-
-  broadcastMatchState();
-
-  socket.on("players:sync", () => {
-    const current = players.get(socket.id);
-
-    if (!current) {
-      return;
-    }
-
-    socket.emit(
-      "players:self",
-      publicPlayer(current)
-    );
-
-    socket.emit(
-      "players:init",
-      Array.from(players.values())
-        .filter((item) => item.id !== socket.id)
-        .map(publicPlayer)
-    );
-
-    socket.emit("match:state", getMatchState());
-    socket.emit("players:count", players.size);
-  });
-
-  socket.on("match:ready", ({ ready } = {}) => {
-    const current = players.get(socket.id);
-
-    if (
-      !current ||
-      !["lobby", "countdown"].includes(match.phase)
-    ) {
-      return;
-    }
-
-    current.ready = Boolean(ready);
-
-    console.log(
-      `Jugador ${socket.id} READY: ${current.ready}`
-    );
-
-    socket.emit(
-      "match:ready-ack",
+    return isInsideRect(
+      target.x,
+      target.y,
       {
-        ready: current.ready,
+        x:
+          x -
+          verticalWidth / 2,
+        y:
+          y +
+          offset -
+          verticalHeight / 2,
+        width:
+          verticalWidth,
+        height:
+          verticalHeight,
       }
     );
+  }
 
-    if (
-      match.phase === "countdown" &&
-      !current.ready
-    ) {
-      cancelCountdown();
-      return;
+  return isInsideRect(
+    target.x,
+    target.y,
+    {
+      x:
+        x -
+        verticalWidth / 2,
+      y:
+        y -
+        offset -
+        verticalHeight / 2,
+      width:
+        verticalWidth,
+      height:
+        verticalHeight,
     }
+  );
+}
 
-    maybeStartCountdown();
-  });
+setInterval(() => {
+  if (
+    match.phase !==
+      "playing" ||
+    !match.zone.active
+  ) {
+    return;
+  }
 
-  socket.on("player:state", (state = {}) => {
-    const current = players.get(socket.id);
+  const now = Date.now();
 
-    if (!current || current.isDead) {
-      return;
-    }
+  if (
+    now <
+    nextZoneDamageAt
+  ) {
+    return;
+  }
 
-    if (Number.isFinite(state.x)) {
-      current.x = clamp(
-        state.x,
-        WORLD_BOUNDS.minX,
-        WORLD_BOUNDS.maxX
-      );
-    }
+  nextZoneDamageAt =
+    now +
+    match.zone.damageIntervalMs;
 
-    if (Number.isFinite(state.y)) {
-      current.y = clamp(
-        state.y,
-        WORLD_BOUNDS.minY,
-        WORLD_BOUNDS.maxY
-      );
-    }
+  const radius =
+    getZoneRadius(now);
 
-    current.facing =
-      sanitizeFacing(state.facing);
-    current.moving = Boolean(state.moving);
+  let damagedSomeone = false;
 
-    socket.broadcast.emit(
-      "player:state",
-      publicPlayer(current)
-    );
-  });
-
-  socket.on("player:health", ({ hp } = {}) => {
-    const current = players.get(socket.id);
-
-    if (
-      !current ||
-      !Number.isFinite(hp) ||
-      match.phase === "playing" ||
-      match.phase === "finished"
-    ) {
-      return;
-    }
-
-    current.hp = clamp(Math.round(hp), 0, 100);
-    current.isDead = current.hp <= 0;
-
-    io.emit("player:health", {
-      id: socket.id,
-      hp: current.hp,
-      isDead: current.isDead,
-    });
-  });
-
-  socket.on("player:attack", ({ abilityName } = {}) => {
-    const attacker = players.get(socket.id);
-    const ability = ABILITIES[abilityName];
-
-    if (
-      match.phase !== "playing" ||
-      !attacker ||
-      !ability ||
-      attacker.isDead
-    ) {
-      return;
-    }
-
-    const now = Date.now();
-
-    if (
-      now <
-      attacker.cooldownEnds[abilityName]
-    ) {
-      return;
-    }
-
-    attacker.cooldownEnds[abilityName] =
-      now + ability.cooldown;
-
-    socket.broadcast.emit("player:attack", {
-      id: socket.id,
-      abilityName,
-      x: attacker.x,
-      y: attacker.y,
-      facing: attacker.facing,
-    });
-
-    let hitAnyPlayer = false;
-
-    players.forEach((target, targetId) => {
+  players.forEach(
+    (player) => {
       if (
-        targetId === socket.id ||
-        target.isDead ||
-        !attackHits(
-          attacker,
-          target,
-          abilityName
+        player.isDead ||
+        !isOutsideZone(
+          player,
+          radius
         )
       ) {
         return;
       }
 
-      target.hp = Math.max(
+      player.hp = Math.max(
         0,
-        target.hp - ability.damage
+        player.hp -
+          match.zone.damage
       );
-      target.isDead = target.hp <= 0;
-      hitAnyPlayer = true;
 
-      io.to(targetId).emit("player:damaged", {
-        amount: ability.damage,
-        hp: target.hp,
-        fromId: socket.id,
-      });
+      player.isDead =
+        player.hp <= 0;
 
-      io.emit("player:health", {
-        id: targetId,
-        hp: target.hp,
-        isDead: target.isDead,
-      });
-    });
+      damagedSomeone = true;
 
-    if (hitAnyPlayer) {
-      socket.emit("player:hit-confirm", {
-        abilityName,
-      });
+      io.to(player.id).emit(
+        "player:damaged",
+        {
+          amount:
+            match.zone.damage,
+          hp: player.hp,
+          fromId: null,
+          source: "zone",
+        }
+      );
 
-      broadcastMatchState();
-      evaluateWinner();
+      io.emit(
+        "player:health",
+        {
+          id: player.id,
+          hp: player.hp,
+          isDead:
+            player.isDead,
+        }
+      );
     }
-  });
+  );
 
-  socket.on("disconnect", () => {
-    players.delete(socket.id);
+  if (damagedSomeone) {
+    broadcastMatchState();
+    evaluateWinner();
+  }
+}, 250);
 
-    console.log(
-      `Jugador desconectado: ${socket.id} · Total: ${players.size}`
+io.on(
+  "connection",
+  (socket) => {
+    if (
+      match.phase ===
+      "countdown"
+    ) {
+      cancelCountdown();
+    }
+
+    const joinsAsSpectator =
+      match.phase ===
+        "playing" ||
+      match.phase ===
+        "finished";
+
+    const spawn =
+      joinsAsSpectator
+        ? getArenaSpawn(
+            players.size
+          )
+        : getLobbySpawn(
+            players.size
+          );
+
+    const player = {
+      id: socket.id,
+      x: spawn.x,
+      y: spawn.y,
+      facing: "down",
+      moving: false,
+      hp:
+        joinsAsSpectator
+          ? 0
+          : 100,
+      isDead:
+        joinsAsSpectator,
+      ready: false,
+      kills: 0,
+      cooldownEnds: {
+        attack1: 0,
+        attack2: 0,
+        attack3: 0,
+      },
+    };
+
+    players.set(
+      socket.id,
+      player
     );
 
-    socket.broadcast.emit("player:left", {
-      id: socket.id,
-    });
+    console.log(
+      `Jugador conectado: ${socket.id} · Total: ${players.size}`
+    );
 
-    if (players.size === 0) {
-      returnToLobby();
-      return;
-    }
+    socket.broadcast.emit(
+      "player:joined",
+      publicPlayer(player)
+    );
 
-    if (match.phase === "playing") {
-      broadcastMatchState();
-      evaluateWinner();
-    } else if (match.phase === "countdown") {
-      cancelCountdown();
-      maybeStartCountdown();
-    } else {
-      broadcastMatchState();
-    }
-  });
-});
+    broadcastMatchState();
 
-server.listen(PORT, () => {
-  console.log(
-    `AnderCode Battle Royale ejecutándose en http://localhost:${PORT}`
-  );
-});
+    socket.on(
+      "players:sync",
+      () => {
+        const current =
+          players.get(
+            socket.id
+          );
+
+        if (!current) {
+          return;
+        }
+
+        socket.emit(
+          "players:self",
+          publicPlayer(
+            current
+          )
+        );
+
+        socket.emit(
+          "players:init",
+          Array.from(
+            players.values()
+          )
+            .filter(
+              (item) =>
+                item.id !==
+                socket.id
+            )
+            .map(
+              publicPlayer
+            )
+        );
+
+        socket.emit(
+          "match:state",
+          getMatchState()
+        );
+
+        socket.emit(
+          "players:count",
+          players.size
+        );
+      }
+    );
+
+    socket.on(
+      "match:ready",
+      ({ ready } = {}) => {
+        const current =
+          players.get(
+            socket.id
+          );
+
+        if (
+          !current ||
+          ![
+            "lobby",
+            "countdown",
+          ].includes(
+            match.phase
+          )
+        ) {
+          return;
+        }
+
+        current.ready =
+          Boolean(ready);
+
+        console.log(
+          `Jugador ${socket.id} READY: ${current.ready}`
+        );
+
+        socket.emit(
+          "match:ready-ack",
+          {
+            ready:
+              current.ready,
+          }
+        );
+
+        if (
+          match.phase ===
+            "countdown" &&
+          !current.ready
+        ) {
+          cancelCountdown();
+          return;
+        }
+
+        maybeStartCountdown();
+      }
+    );
+
+    socket.on(
+      "player:state",
+      (state = {}) => {
+        const current =
+          players.get(
+            socket.id
+          );
+
+        if (
+          !current ||
+          current.isDead
+        ) {
+          return;
+        }
+
+        const bounds =
+          getCurrentBounds();
+
+        if (
+          Number.isFinite(
+            state.x
+          )
+        ) {
+          current.x =
+            clamp(
+              state.x,
+              bounds.minX,
+              bounds.maxX
+            );
+        }
+
+        if (
+          Number.isFinite(
+            state.y
+          )
+        ) {
+          current.y =
+            clamp(
+              state.y,
+              bounds.minY,
+              bounds.maxY
+            );
+        }
+
+        current.facing =
+          sanitizeFacing(
+            state.facing
+          );
+
+        current.moving =
+          Boolean(
+            state.moving
+          );
+
+        socket.broadcast.emit(
+          "player:state",
+          publicPlayer(
+            current
+          )
+        );
+      }
+    );
+
+    socket.on(
+      "player:health",
+      ({ hp } = {}) => {
+        const current =
+          players.get(
+            socket.id
+          );
+
+        if (
+          !current ||
+          !Number.isFinite(
+            hp
+          ) ||
+          match.phase ===
+            "playing" ||
+          match.phase ===
+            "finished"
+        ) {
+          return;
+        }
+
+        current.hp = clamp(
+          Math.round(hp),
+          0,
+          100
+        );
+
+        current.isDead =
+          current.hp <= 0;
+
+        io.emit(
+          "player:health",
+          {
+            id: socket.id,
+            hp: current.hp,
+            isDead:
+              current.isDead,
+          }
+        );
+      }
+    );
+
+    socket.on(
+      "player:attack",
+      ({
+        abilityName,
+      } = {}) => {
+        const attacker =
+          players.get(
+            socket.id
+          );
+
+        const ability =
+          ABILITIES[
+            abilityName
+          ];
+
+        if (
+          match.phase !==
+            "playing" ||
+          !attacker ||
+          !ability ||
+          attacker.isDead
+        ) {
+          return;
+        }
+
+        const now =
+          Date.now();
+
+        if (
+          now <
+          attacker
+            .cooldownEnds[
+              abilityName
+            ]
+        ) {
+          return;
+        }
+
+        attacker
+          .cooldownEnds[
+            abilityName
+          ] =
+          now +
+          ability.cooldown;
+
+        socket.broadcast.emit(
+          "player:attack",
+          {
+            id: socket.id,
+            abilityName,
+            x: attacker.x,
+            y: attacker.y,
+            facing:
+              attacker.facing,
+          }
+        );
+
+        let hitAnyPlayer =
+          false;
+
+        players.forEach(
+          (
+            target,
+            targetId
+          ) => {
+            if (
+              targetId ===
+                socket.id ||
+              target.isDead ||
+              !attackHits(
+                attacker,
+                target,
+                abilityName
+              )
+            ) {
+              return;
+            }
+
+            target.hp =
+              Math.max(
+                0,
+                target.hp -
+                  ability.damage
+              );
+
+            const diedNow =
+              target.hp <= 0 &&
+              !target.isDead;
+
+            target.isDead =
+              target.hp <= 0;
+
+            if (diedNow) {
+              attacker.kills += 1;
+            }
+
+            hitAnyPlayer =
+              true;
+
+            io.to(
+              targetId
+            ).emit(
+              "player:damaged",
+              {
+                amount:
+                  ability.damage,
+                hp: target.hp,
+                fromId:
+                  socket.id,
+                source:
+                  "player",
+              }
+            );
+
+            io.emit(
+              "player:health",
+              {
+                id: targetId,
+                hp: target.hp,
+                isDead:
+                  target.isDead,
+              }
+            );
+          }
+        );
+
+        if (hitAnyPlayer) {
+          socket.emit(
+            "player:hit-confirm",
+            {
+              abilityName,
+            }
+          );
+
+          broadcastMatchState();
+          evaluateWinner();
+        }
+      }
+    );
+
+    socket.on(
+      "disconnect",
+      () => {
+        players.delete(
+          socket.id
+        );
+
+        console.log(
+          `Jugador desconectado: ${socket.id} · Total: ${players.size}`
+        );
+
+        socket.broadcast.emit(
+          "player:left",
+          {
+            id:
+              socket.id,
+          }
+        );
+
+        if (
+          players.size === 0
+        ) {
+          returnToLobby();
+          return;
+        }
+
+        if (
+          match.phase ===
+          "playing"
+        ) {
+          broadcastMatchState();
+          evaluateWinner();
+        } else if (
+          match.phase ===
+          "countdown"
+        ) {
+          cancelCountdown();
+          maybeStartCountdown();
+        } else {
+          broadcastMatchState();
+        }
+      }
+    );
+  }
+);
+
+server.listen(
+  PORT,
+  () => {
+    console.log(
+      `AnderCode Battle Royale ejecutándose en http://localhost:${PORT}`
+    );
+  }
+);

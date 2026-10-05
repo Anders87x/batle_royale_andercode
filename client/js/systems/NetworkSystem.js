@@ -1,5 +1,6 @@
 import { RemotePlayer } from "../entities/RemotePlayer.js";
 import { MatchHud } from "../ui/MatchHud.js";
+import { SafeZoneSystem } from "./SafeZoneSystem.js";
 
 export class NetworkSystem {
   constructor(scene, player) {
@@ -17,16 +18,32 @@ export class NetworkSystem {
       winnerId: null,
       returnToLobbyAt: null,
       minPlayers: 2,
+      zone: {
+        active: false,
+      },
       players: [],
     };
 
     this.createStatusHud();
+
     this.matchHud =
-      new MatchHud(scene, this);
+      new MatchHud(
+        scene,
+        this
+      );
+
+    this.safeZoneSystem =
+      new SafeZoneSystem(
+        scene,
+        player
+      );
 
     this.configureReadyInput();
 
-    if (typeof window.io !== "function") {
+    if (
+      typeof window.io !==
+      "function"
+    ) {
       this.setStatus(
         "SIN SOCKET.IO",
         0xef4444
@@ -51,29 +68,34 @@ export class NetworkSystem {
   }
 
   createStatusHud() {
-    this.statusText = this.scene.add
-      .text(
-        942,
-        18,
-        "MULTIJUGADOR: CONECTANDO...",
-        {
-          fontFamily: "Arial",
-          fontSize: "13px",
-          fontStyle: "bold",
-          color: "#fde68a",
-          backgroundColor: "#0f172acc",
-          padding: {
-            x: 10,
-            y: 6,
-          },
-        }
-      )
-      .setOrigin(1, 0)
-      .setScrollFactor(0)
-      .setDepth(400);
+    this.statusText =
+      this.scene.add
+        .text(
+          942,
+          18,
+          "MULTIJUGADOR: CONECTANDO...",
+          {
+            fontFamily: "Arial",
+            fontSize: "13px",
+            fontStyle: "bold",
+            color: "#fde68a",
+            backgroundColor:
+              "#0f172acc",
+            padding: {
+              x: 10,
+              y: 6,
+            },
+          }
+        )
+        .setOrigin(1, 0)
+        .setScrollFactor(0)
+        .setDepth(400);
   }
 
-  setStatus(label, color) {
+  setStatus(
+    label,
+    color
+  ) {
     this.statusText
       .setText(label)
       .setColor(
@@ -97,16 +119,19 @@ export class NetworkSystem {
   }
 
   configureSocket() {
-    this.socket.on("connect", () => {
-      this.setStatus(
-        "MULTIJUGADOR: CONECTADO · sincronizando...",
-        0x86efac
-      );
+    this.socket.on(
+      "connect",
+      () => {
+        this.setStatus(
+          "MULTIJUGADOR: CONECTADO · sincronizando...",
+          0x86efac
+        );
 
-      this.socket.emit(
-        "players:sync"
-      );
-    });
+        this.socket.emit(
+          "players:sync"
+        );
+      }
+    );
 
     this.socket.on(
       "connect_error",
@@ -123,17 +148,21 @@ export class NetworkSystem {
       }
     );
 
-    this.socket.on("disconnect", () => {
-      this.setStatus(
-        "MULTIJUGADOR: DESCONECTADO",
-        0xf87171
-      );
-    });
+    this.socket.on(
+      "disconnect",
+      () => {
+        this.setStatus(
+          "MULTIJUGADOR: DESCONECTADO",
+          0xf87171
+        );
+      }
+    );
 
     this.socket.on(
       "players:count",
       (count) => {
-        this.connectedPlayers = count;
+        this.connectedPlayers =
+          count;
 
         this.setStatus(
           `MULTIJUGADOR: CONECTADO · ${count} jugador${count === 1 ? "" : "es"}`,
@@ -150,8 +179,17 @@ export class NetworkSystem {
         const previousPhase =
           this.matchState.phase;
 
-        this.matchState = state;
-        this.matchHud.applyState(state);
+        this.matchState =
+          state;
+
+        this.matchHud.applyState(
+          state
+        );
+
+        this.safeZoneSystem
+          .applyMatchState(
+            state
+          );
 
         state.players.forEach(
           (playerState) => {
@@ -169,8 +207,10 @@ export class NetworkSystem {
         );
 
         if (
-          previousPhase !== "playing" &&
-          state.phase === "playing"
+          previousPhase !==
+            "playing" &&
+          state.phase ===
+            "playing"
         ) {
           this.scene.events.emit(
             "match-started"
@@ -178,8 +218,10 @@ export class NetworkSystem {
         }
 
         if (
-          previousPhase !== "lobby" &&
-          state.phase === "lobby"
+          previousPhase !==
+            "lobby" &&
+          state.phase ===
+            "lobby"
         ) {
           this.scene.events.emit(
             "match-returned-to-lobby"
@@ -200,28 +242,38 @@ export class NetworkSystem {
     this.socket.on(
       "match:players-reset",
       (states) => {
-        states.forEach((state) => {
-          if (
-            state.id === this.socket.id
-          ) {
-            this.applySelfReset(state);
-            return;
-          }
+        states.forEach(
+          (state) => {
+            if (
+              state.id ===
+              this.socket.id
+            ) {
+              this.applySelfReset(
+                state
+              );
 
-          const remote =
-            this.createOrUpdateRemote(
+              return;
+            }
+
+            const remote =
+              this.createOrUpdateRemote(
+                state
+              );
+
+            remote?.reset(
               state
             );
-
-          remote?.reset(state);
-        });
+          }
+        );
       }
     );
 
     this.socket.on(
       "players:self",
       (state) => {
-        this.applySelfState(state);
+        this.applySelfState(
+          state
+        );
       }
     );
 
@@ -231,17 +283,30 @@ export class NetworkSystem {
         const activeIds =
           new Set();
 
-        players.forEach((state) => {
-          activeIds.add(state.id);
-          this.createOrUpdateRemote(
-            state
-          );
-        });
+        players.forEach(
+          (state) => {
+            activeIds.add(
+              state.id
+            );
+
+            this.createOrUpdateRemote(
+              state
+            );
+          }
+        );
 
         this.remotePlayers.forEach(
-          (remote, id) => {
-            if (!activeIds.has(id)) {
+          (
+            remote,
+            id
+          ) => {
+            if (
+              !activeIds.has(
+                id
+              )
+            ) {
               remote.destroy();
+
               this.remotePlayers.delete(
                 id
               );
@@ -308,14 +373,29 @@ export class NetworkSystem {
 
     this.socket.on(
       "player:damaged",
-      ({ amount, hp }) => {
+      ({
+        amount,
+        hp,
+        source,
+      }) => {
         this.player.takeDamage(
           amount,
           {
             sync: false,
-            authoritativeHp: hp,
+            authoritativeHp:
+              hp,
           }
         );
+
+        if (
+          source ===
+          "zone"
+        ) {
+          this.scene.cameras.main.shake(
+            90,
+            0.0025
+          );
+        }
       }
     );
 
@@ -333,7 +413,9 @@ export class NetworkSystem {
       "player:left",
       ({ id }) => {
         const remote =
-          this.remotePlayers.get(id);
+          this.remotePlayers.get(
+            id
+          );
 
         if (!remote) {
           return;
@@ -385,7 +467,9 @@ export class NetworkSystem {
       state.facing || "down";
 
     this.player.hp =
-      Number.isFinite(state.hp)
+      Number.isFinite(
+        state.hp
+      )
         ? state.hp
         : 100;
 
@@ -403,9 +487,14 @@ export class NetworkSystem {
       !state.isDead &&
       this.player.isDead
     ) {
-      this.player.respawn(false);
+      this.player.respawn(
+        false
+      );
+
       this.player.hp =
-        Number.isFinite(state.hp)
+        Number.isFinite(
+          state.hp
+        )
           ? state.hp
           : 100;
     }
@@ -421,15 +510,21 @@ export class NetworkSystem {
     this.player.facing =
       state.facing || "down";
 
-    this.player.respawn(false);
+    this.player.respawn(
+      false
+    );
+
     this.player.hp =
       state.hp ?? 100;
   }
 
-  createOrUpdateRemote(state) {
+  createOrUpdateRemote(
+    state
+  ) {
     if (
       !state?.id ||
-      state.id === this.socket?.id
+      state.id ===
+        this.socket?.id
     ) {
       return null;
     }
@@ -440,10 +535,11 @@ export class NetworkSystem {
       );
 
     if (!remote) {
-      remote = new RemotePlayer(
-        this.scene,
-        state
-      );
+      remote =
+        new RemotePlayer(
+          this.scene,
+          state
+        );
 
       const collider =
         this.scene.physics.add.collider(
@@ -451,20 +547,26 @@ export class NetworkSystem {
           remote.sprite
         );
 
-      remote.setCollider(collider);
+      remote.setCollider(
+        collider
+      );
 
       this.remotePlayers.set(
         state.id,
         remote
       );
     } else {
-      remote.applyState(state);
+      remote.applyState(
+        state
+      );
     }
 
     return remote;
   }
 
-  setLocalReadyState(ready) {
+  setLocalReadyState(
+    ready
+  ) {
     if (!this.socket?.id) {
       return;
     }
@@ -474,7 +576,8 @@ export class NetworkSystem {
       players:
         this.matchState.players.map(
           (player) =>
-            player.id === this.socket.id
+            player.id ===
+            this.socket.id
               ? {
                   ...player,
                   ready,
@@ -491,7 +594,10 @@ export class NetworkSystem {
   toggleReady() {
     if (
       !this.socket?.connected ||
-      !["lobby", "countdown"].includes(
+      ![
+        "lobby",
+        "countdown",
+      ].includes(
         this.matchState.phase
       )
     ) {
@@ -506,9 +612,10 @@ export class NetworkSystem {
       );
 
     const nextReady =
-      !Boolean(self?.ready);
+      !Boolean(
+        self?.ready
+      );
 
-    // Feedback inmediato al pulsar R.
     this.setLocalReadyState(
       nextReady
     );
@@ -522,7 +629,9 @@ export class NetworkSystem {
   }
 
   getPhase() {
-    return this.matchState.phase;
+    return (
+      this.matchState.phase
+    );
   }
 
   isMatchPlaying() {
@@ -535,13 +644,17 @@ export class NetworkSystem {
   update() {
     this.matchHud.update();
 
+    this.safeZoneSystem.update();
+
     this.remotePlayers.forEach(
       (remote) => {
         remote.update();
       }
     );
 
-    if (!this.socket?.connected) {
+    if (
+      !this.socket?.connected
+    ) {
       return;
     }
 
@@ -559,21 +672,31 @@ export class NetworkSystem {
     const body =
       this.player.sprite.body;
 
-    const moving = Boolean(
-      body &&
-      body.enable &&
-      (Math.abs(body.velocity.x) >
-        1 ||
-        Math.abs(body.velocity.y) >
-          1)
-    );
+    const moving =
+      Boolean(
+        body &&
+          body.enable &&
+          (
+            Math.abs(
+              body.velocity.x
+            ) > 1 ||
+            Math.abs(
+              body.velocity.y
+            ) > 1
+          )
+      );
 
     this.socket.emit(
       "player:state",
       {
-        x: this.player.sprite.x,
-        y: this.player.sprite.y,
-        facing: this.player.facing,
+        x:
+          this.player
+            .sprite.x,
+        y:
+          this.player
+            .sprite.y,
+        facing:
+          this.player.facing,
         moving,
       }
     );
