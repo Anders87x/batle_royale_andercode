@@ -5,10 +5,10 @@ const PLAYER_SPEED = 180;
 
 const ATTACK_DAMAGE = 25;
 const ATTACK_IMPACT_DELAY = 250;
-const DUMMY_MAX_HP = 100;
+const ENEMY_MAX_HP = 100;
+const ENEMY_FACING = "left";
 
-// Orden real de las filas del pack de CraftPix.
-// Lo validamos visualmente en Idle, Walk y Attack:
+// Orden real de las filas del pack de CraftPix:
 // fila 0 = frente / abajo
 // fila 1 = izquierda
 // fila 2 = derecha
@@ -20,19 +20,21 @@ const DIRECTIONS = {
   up: 3,
 };
 
-// Este spritesheet tiene una particularidad:
-// abajo, derecha e izquierda usan 12 frames de Idle,
-// pero la fila de espalda / arriba solo contiene 4 frames.
+// Idle tiene una particularidad:
+// abajo, izquierda y derecha usan 12 frames,
+// pero arriba / espalda solo contiene 4 frames reales.
 const IDLE_FRAMES_BY_DIRECTION = {
   down: 12,
-  right: 12,
   left: 12,
+  right: 12,
   up: 4,
 };
 
 const IDLE_COLUMNS = 12;
 const WALK_FRAMES_PER_DIRECTION = 6;
 const ATTACK_FRAMES_PER_DIRECTION = 8;
+const HURT_FRAMES_PER_DIRECTION = 5;
+const DEATH_FRAMES_PER_DIRECTION = 7;
 
 let player;
 let movementKeys;
@@ -40,11 +42,11 @@ let attackKey;
 let facing = "down";
 let isAttacking = false;
 
-let dummy;
-let dummyHp = DUMMY_MAX_HP;
-let dummyAlive = true;
-let dummyLabel;
-let dummyHpBar;
+let enemy;
+let enemyHp = ENEMY_MAX_HP;
+let enemyAlive = true;
+let enemyLabel;
+let enemyHpBar;
 
 function preload() {
   this.load.spritesheet(
@@ -73,6 +75,24 @@ function preload() {
       frameHeight: FRAME_SIZE,
     }
   );
+
+  this.load.spritesheet(
+    "swordsman-hurt",
+    "/assets/characters/swordsman/hurt.png",
+    {
+      frameWidth: FRAME_SIZE,
+      frameHeight: FRAME_SIZE,
+    }
+  );
+
+  this.load.spritesheet(
+    "swordsman-death",
+    "/assets/characters/swordsman/death.png",
+    {
+      frameWidth: FRAME_SIZE,
+      frameHeight: FRAME_SIZE,
+    }
+  );
 }
 
 function createDirectionalAnimations(scene) {
@@ -81,6 +101,8 @@ function createDirectionalAnimations(scene) {
     const idleFrameCount = IDLE_FRAMES_BY_DIRECTION[direction];
     const walkStart = row * WALK_FRAMES_PER_DIRECTION;
     const attackStart = row * ATTACK_FRAMES_PER_DIRECTION;
+    const hurtStart = row * HURT_FRAMES_PER_DIRECTION;
+    const deathStart = row * DEATH_FRAMES_PER_DIRECTION;
 
     scene.anims.create({
       key: `idle-${direction}`,
@@ -109,6 +131,26 @@ function createDirectionalAnimations(scene) {
         end: attackStart + ATTACK_FRAMES_PER_DIRECTION - 1,
       }),
       frameRate: 14,
+      repeat: 0,
+    });
+
+    scene.anims.create({
+      key: `hurt-${direction}`,
+      frames: scene.anims.generateFrameNumbers("swordsman-hurt", {
+        start: hurtStart,
+        end: hurtStart + HURT_FRAMES_PER_DIRECTION - 1,
+      }),
+      frameRate: 12,
+      repeat: 0,
+    });
+
+    scene.anims.create({
+      key: `death-${direction}`,
+      frames: scene.anims.generateFrameNumbers("swordsman-death", {
+        start: deathStart,
+        end: deathStart + DEATH_FRAMES_PER_DIRECTION - 1,
+      }),
+      frameRate: 10,
       repeat: 0,
     });
   });
@@ -169,6 +211,21 @@ function getAttackHitbox() {
   }
 }
 
+// La textura mide 64x64, pero gran parte es transparente.
+// Por eso no usamos enemy.getBounds() como zona de daño.
+// Esta caja representa aproximadamente el cuerpo visible.
+function getEnemyHurtbox() {
+  const width = 46;
+  const height = 58;
+
+  return new Phaser.Geom.Rectangle(
+    enemy.x - width / 2,
+    enemy.y - height / 2 + 8,
+    width,
+    height
+  );
+}
+
 function showHitboxDebug(scene, hitbox) {
   const debugBox = scene.add
     .rectangle(
@@ -187,20 +244,20 @@ function showHitboxDebug(scene, hitbox) {
   });
 }
 
-function updateDummyHud() {
-  if (!dummyAlive) {
-    dummyLabel.setText("Muñeco de prueba · DERROTADO");
-    dummyHpBar.setScale(0, 1);
+function updateEnemyHud() {
+  if (!enemyAlive) {
+    enemyLabel.setText("Enemigo · ELIMINADO");
+    enemyHpBar.setScale(0, 1);
     return;
   }
 
-  dummyLabel.setText(`Muñeco de prueba · ${dummyHp} HP`);
-  dummyHpBar.setScale(dummyHp / DUMMY_MAX_HP, 1);
+  enemyLabel.setText(`Enemigo · ${enemyHp} HP`);
+  enemyHpBar.setScale(enemyHp / ENEMY_MAX_HP, 1);
 }
 
 function showDamageText(scene, amount) {
   const damageText = scene.add
-    .text(dummy.x, dummy.y - 48, `-${amount}`, {
+    .text(enemy.x, enemy.y - 64, `-${amount}`, {
       fontFamily: "Arial",
       fontSize: "20px",
       fontStyle: "bold",
@@ -218,54 +275,75 @@ function showDamageText(scene, amount) {
   });
 }
 
-function resetDummy() {
-  dummyHp = DUMMY_MAX_HP;
-  dummyAlive = true;
-  dummy.setFillStyle(0x64748b, 1);
-  dummy.setStrokeStyle(3, 0xcbd5e1, 1);
-  updateDummyHud();
+function resetEnemy() {
+  enemyHp = ENEMY_MAX_HP;
+  enemyAlive = true;
+  enemy.setVisible(true);
+  enemy.play(`idle-${ENEMY_FACING}`, true);
+  updateEnemyHud();
+}
+
+function playEnemyHurt() {
+  enemy.play(`hurt-${ENEMY_FACING}`, true);
+
+  enemy.once(Phaser.Animations.Events.ANIMATION_COMPLETE, (animation) => {
+    if (
+      animation.key === `hurt-${ENEMY_FACING}` &&
+      enemyAlive
+    ) {
+      enemy.play(`idle-${ENEMY_FACING}`, true);
+    }
+  });
+}
+
+function playEnemyDeath(scene) {
+  enemyAlive = false;
+  updateEnemyHud();
+
+  const deathAnimationKey = `death-${ENEMY_FACING}`;
+  enemy.play(deathAnimationKey, true);
+
+  enemy.once(Phaser.Animations.Events.ANIMATION_COMPLETE, (animation) => {
+    if (animation.key !== deathAnimationKey) {
+      return;
+    }
+
+    // Dejamos el cuerpo en el último frame un instante antes de reaparecer.
+    scene.time.delayedCall(900, () => {
+      resetEnemy();
+    });
+  });
 }
 
 function applyAttackHit(scene) {
-  if (!dummyAlive) {
+  if (!enemyAlive) {
     return;
   }
 
   const attackHitbox = getAttackHitbox();
   showHitboxDebug(scene, attackHitbox);
 
-  const dummyBounds = dummy.getBounds();
+  const enemyHurtbox = getEnemyHurtbox();
   const didHit = Phaser.Geom.Rectangle.Overlaps(
     attackHitbox,
-    dummyBounds
+    enemyHurtbox
   );
 
   if (!didHit) {
     return;
   }
 
-  dummyHp = Math.max(0, dummyHp - ATTACK_DAMAGE);
+  enemyHp = Math.max(0, enemyHp - ATTACK_DAMAGE);
 
-  dummy.setFillStyle(0xef4444, 1);
   showDamageText(scene, ATTACK_DAMAGE);
-  updateDummyHud();
+  updateEnemyHud();
 
-  scene.time.delayedCall(120, () => {
-    if (dummyAlive) {
-      dummy.setFillStyle(0x64748b, 1);
-    }
-  });
-
-  if (dummyHp === 0) {
-    dummyAlive = false;
-    dummy.setFillStyle(0x334155, 1);
-    dummy.setStrokeStyle(3, 0x475569, 1);
-    updateDummyHud();
-
-    scene.time.delayedCall(1400, () => {
-      resetDummy();
-    });
+  if (enemyHp === 0) {
+    playEnemyDeath(scene);
+    return;
   }
+
+  playEnemyHurt();
 }
 
 function startAttack(scene) {
@@ -279,8 +357,8 @@ function startAttack(scene) {
 
   player.play(attackAnimationKey, true);
 
-  // El daño no ocurre al pulsar el botón, sino en el momento
-  // aproximado en el que el mandoble atraviesa la zona frontal.
+  // El daño ocurre cuando el mandoble entra en la zona de impacto,
+  // no en el instante exacto en que se pulsa el botón.
   scene.time.delayedCall(ATTACK_IMPACT_DELAY, () => {
     if (isAttacking) {
       applyAttackHit(scene);
@@ -297,20 +375,19 @@ function startAttack(scene) {
   });
 }
 
-function createTrainingDummy(scene) {
-  dummy = scene.add
-    .rectangle(
-      GAME_WIDTH / 2 + 125,
-      GAME_HEIGHT / 2,
-      46,
-      64,
-      0x64748b,
-      1
-    )
-    .setStrokeStyle(3, 0xcbd5e1, 1);
+function createTrainingEnemy(scene) {
+  enemy = scene.add.sprite(
+    GAME_WIDTH / 2 + 125,
+    GAME_HEIGHT / 2,
+    "swordsman-idle",
+    0
+  );
 
-  dummyLabel = scene.add
-    .text(dummy.x, dummy.y - 62, "", {
+  enemy.setScale(2);
+  enemy.play(`idle-${ENEMY_FACING}`);
+
+  enemyLabel = scene.add
+    .text(enemy.x, enemy.y - 76, "", {
       fontFamily: "Arial",
       fontSize: "15px",
       color: "#ffffff",
@@ -320,23 +397,25 @@ function createTrainingDummy(scene) {
         y: 4,
       },
     })
-    .setOrigin(0.5);
+    .setOrigin(0.5)
+    .setDepth(10);
 
   scene.add
-    .rectangle(dummy.x - 40, dummy.y - 40, 80, 8, 0x111827, 1)
+    .rectangle(enemy.x - 40, enemy.y - 52, 80, 8, 0x111827, 1)
     .setOrigin(0, 0.5)
-    .setStrokeStyle(1, 0x94a3b8, 1);
+    .setStrokeStyle(1, 0x94a3b8, 1)
+    .setDepth(10);
 
-  dummyHpBar = scene.add
-    .rectangle(dummy.x - 40, dummy.y - 40, 80, 8, 0x22c55e, 1)
-    .setOrigin(0, 0.5);
+  enemyHpBar = scene.add
+    .rectangle(enemy.x - 40, enemy.y - 52, 80, 8, 0x22c55e, 1)
+    .setOrigin(0, 0.5)
+    .setDepth(11);
 
-  updateDummyHud();
+  updateEnemyHud();
 }
 
 function create() {
   createDirectionalAnimations(this);
-  createTrainingDummy(this);
 
   player = this.add.sprite(
     GAME_WIDTH / 2,
@@ -347,6 +426,8 @@ function create() {
 
   player.setScale(2);
   player.play("idle-down");
+
+  createTrainingEnemy(this);
 
   movementKeys = this.input.keyboard.addKeys({
     up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -387,7 +468,7 @@ function create() {
     .text(
       18,
       52,
-      "El rectángulo amarillo muestra la hitbox únicamente en el momento del impacto.",
+      "Golpea al Swordsman enemigo: Hurt con daño y Death al llegar a 0 HP.",
       {
         fontFamily: "Arial",
         fontSize: "14px",
