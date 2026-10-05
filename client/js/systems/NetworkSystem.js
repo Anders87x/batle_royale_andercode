@@ -61,6 +61,11 @@ export class NetworkSystem {
         "websocket",
         "polling",
       ],
+      auth: {
+        name:
+          window.PLAYER_NAME ||
+          "Jugador",
+      },
     });
 
     this.configureSocket();
@@ -457,6 +462,16 @@ export class NetworkSystem {
   }
 
   applySelfState(state) {
+    if (
+      typeof state.name === "string" &&
+      state.name.trim()
+    ) {
+      this.player.name =
+        state.name;
+      window.PLAYER_NAME =
+        state.name;
+    }
+
     this.player.setSpawnPosition(
       state.x,
       state.y,
@@ -501,6 +516,16 @@ export class NetworkSystem {
   }
 
   applySelfReset(state) {
+    if (
+      typeof state.name === "string" &&
+      state.name.trim()
+    ) {
+      this.player.name =
+        state.name;
+      window.PLAYER_NAME =
+        state.name;
+    }
+
     this.player.setSpawnPosition(
       state.x,
       state.y,

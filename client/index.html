@@ -7,6 +7,58 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+  <div
+    id="player-entry"
+    class="player-entry"
+    aria-modal="true"
+    role="dialog"
+  >
+    <form
+      id="player-entry-form"
+      class="player-entry-card"
+      autocomplete="off"
+    >
+      <p class="player-entry-eyebrow">
+        ANDERCODE BATTLE ROYALE
+      </p>
+
+      <h2>¿Cómo te llamas?</h2>
+
+      <p class="player-entry-copy">
+        Este nombre aparecerá sobre tu personaje para que los demás jugadores puedan distinguirte.
+      </p>
+
+      <label for="player-name">
+        Nombre del jugador
+      </label>
+
+      <input
+        id="player-name"
+        name="playerName"
+        type="text"
+        minlength="2"
+        maxlength="16"
+        placeholder="Ej. Ander"
+        spellcheck="false"
+        required
+      >
+
+      <p
+        id="player-name-error"
+        class="player-entry-error"
+        aria-live="polite"
+      ></p>
+
+      <button type="submit">
+        Entrar al lobby
+      </button>
+
+      <small>
+        Máximo 16 caracteres
+      </small>
+    </form>
+  </div>
+
   <main class="game-page">
     <section class="game-header">
       <p class="eyebrow">AnderCode Battle Royale</p>

@@ -5,6 +5,9 @@ const Phaser = window.Phaser;
 export class Player {
   constructor(scene, x, y) {
     this.scene = scene;
+    this.name =
+      window.PLAYER_NAME ||
+      "Jugador";
     this.spawnX = x;
     this.spawnY = y;
     this.facing = "down";

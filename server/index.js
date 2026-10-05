@@ -125,6 +125,73 @@ function getArenaSpawn(index) {
   ];
 }
 
+function sanitizePlayerName(value) {
+  const cleaned = String(
+    value || ""
+  )
+    .trim()
+    .replace(/\s+/g, " ")
+    .replace(
+      /[^a-zA-Z0-9À-ÿ _-]/g,
+      ""
+    )
+    .slice(0, 16);
+
+  return cleaned.length >= 2
+    ? cleaned
+    : "Jugador";
+}
+
+function getUniquePlayerName(
+  requestedName
+) {
+  const baseName =
+    sanitizePlayerName(
+      requestedName
+    );
+
+  const usedNames =
+    new Set(
+      Array.from(
+        players.values()
+      ).map((player) =>
+        player.name.toLowerCase()
+      )
+    );
+
+  if (
+    !usedNames.has(
+      baseName.toLowerCase()
+    )
+  ) {
+    return baseName;
+  }
+
+  let suffix = 2;
+
+  while (true) {
+    const suffixText =
+      ` ${suffix}`;
+
+    const candidate =
+      `${baseName.slice(
+        0,
+        16 -
+          suffixText.length
+      )}${suffixText}`;
+
+    if (
+      !usedNames.has(
+        candidate.toLowerCase()
+      )
+    ) {
+      return candidate;
+    }
+
+    suffix += 1;
+  }
+}
+
 function sanitizeFacing(facing) {
   return [
     "up",
@@ -146,6 +213,7 @@ function getCurrentBounds() {
 function publicPlayer(player) {
   return {
     id: player.id,
+    name: player.name,
     x: player.x,
     y: player.y,
     facing: player.facing,
@@ -885,6 +953,10 @@ io.on(
 
     const player = {
       id: socket.id,
+      name:
+        getUniquePlayerName(
+          socket.handshake.auth?.name
+        ),
       x: spawn.x,
       y: spawn.y,
       facing: "down",
@@ -910,7 +982,7 @@ io.on(
     );
 
     console.log(
-      `Jugador conectado: ${socket.id} · Total: ${players.size}`
+      `Jugador conectado: ${player.name} (${socket.id}) · Total: ${players.size}`
     );
 
     socket.broadcast.emit(

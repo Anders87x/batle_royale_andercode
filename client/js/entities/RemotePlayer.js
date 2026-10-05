@@ -6,6 +6,8 @@ export class RemotePlayer {
   constructor(scene, state) {
     this.scene = scene;
     this.id = state.id;
+    this.name =
+      state.name || "Jugador";
     this.facing = state.facing || "down";
     this.targetX = state.x;
     this.targetY = state.y;
@@ -104,6 +106,13 @@ export class RemotePlayer {
     }
 
     if (
+      typeof state.name === "string" &&
+      state.name.trim()
+    ) {
+      this.name = state.name;
+    }
+
+    if (
       typeof state.ready === "boolean"
     ) {
       this.ready = state.ready;
@@ -120,6 +129,10 @@ export class RemotePlayer {
   }
 
   reset(state) {
+    this.name =
+      state.name ||
+      this.name ||
+      "Jugador";
     this.facing = state.facing || "down";
     this.targetX = state.x;
     this.targetY = state.y;
@@ -217,8 +230,8 @@ export class RemotePlayer {
   updateLabel() {
     this.label.setText(
       this.ready
-        ? "JUGADOR · LISTO"
-        : "JUGADOR"
+        ? `${this.name} · LISTO`
+        : this.name
     );
   }
 

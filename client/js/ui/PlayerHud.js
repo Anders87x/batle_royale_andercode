@@ -27,12 +27,17 @@ export class PlayerHud {
       .setDepth(180);
 
     this.nameText = this.scene.add
-      .text(x, y - 20, "SWORDSMAN", {
-        fontFamily: "Arial",
-        fontSize: "13px",
-        fontStyle: "bold",
-        color: "#f8fafc",
-      })
+      .text(
+        x,
+        y - 20,
+        this.player.name,
+        {
+          fontFamily: "Arial",
+          fontSize: "13px",
+          fontStyle: "bold",
+          color: "#f8fafc",
+        }
+      )
       .setScrollFactor(0)
       .setDepth(181);
 
@@ -46,7 +51,11 @@ export class PlayerHud {
         1
       )
       .setOrigin(0, 0)
-      .setStrokeStyle(2, 0xe2e8f0, 0.55)
+      .setStrokeStyle(
+        2,
+        0xe2e8f0,
+        0.55
+      )
       .setScrollFactor(0)
       .setDepth(181);
 
@@ -85,10 +94,20 @@ export class PlayerHud {
   update() {
     const ratio = Math.max(
       0,
-      this.player.hp / this.player.maxHp
+      this.player.hp /
+        this.player.maxHp
     );
 
-    this.hpBar.setScale(ratio, 1);
+    this.nameText.setText(
+      this.player.name ||
+        "Jugador"
+    );
+
+    this.hpBar.setScale(
+      ratio,
+      1
+    );
+
     this.hpText.setText(
       `${this.player.hp} / ${this.player.maxHp} HP`
     );
