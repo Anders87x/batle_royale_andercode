@@ -17,6 +17,70 @@ export class CombatSystem {
       attack2: 0,
       attack3: 0,
     };
+
+    // Buffer corto de input: permite pulsar la siguiente habilidad
+    // mientras la animación actual todavía está terminando.
+    this.queuedAbility = null;
+    this.queueExpiresAt = 0;
+    this.inputBufferMs = 650;
+  }
+
+  requestAbility(abilityName) {
+    if (!this.isCooldownReady(abilityName)) {
+      return false;
+    }
+
+    if (this.player.isAttacking) {
+      this.queuedAbility = abilityName;
+      this.queueExpiresAt =
+        this.scene.time.now + this.inputBufferMs;
+      return true;
+    }
+
+    return this.executeAbility(abilityName);
+  }
+
+  update() {
+    if (!this.queuedAbility) {
+      return;
+    }
+
+    if (this.scene.time.now > this.queueExpiresAt) {
+      this.clearQueuedAbility();
+      return;
+    }
+
+    if (this.player.isAttacking) {
+      return;
+    }
+
+    const abilityName = this.queuedAbility;
+    this.clearQueuedAbility();
+
+    if (this.isCooldownReady(abilityName)) {
+      this.executeAbility(abilityName);
+    }
+  }
+
+  clearQueuedAbility() {
+    this.queuedAbility = null;
+    this.queueExpiresAt = 0;
+  }
+
+  executeAbility(abilityName) {
+    switch (abilityName) {
+      case "attack2":
+        return this.startDashAttack();
+      case "attack3":
+        return this.startSpinAttack();
+      case "attack1":
+      default:
+        return this.startAttack1();
+    }
+  }
+
+  isCooldownReady(abilityName) {
+    return this.scene.time.now >= this.cooldownEnds[abilityName];
   }
 
   startAttack1() {
@@ -154,7 +218,7 @@ export class CombatSystem {
   canUse(abilityName) {
     return (
       !this.player.isAttacking &&
-      this.scene.time.now >= this.cooldownEnds[abilityName]
+      this.isCooldownReady(abilityName)
     );
   }
 

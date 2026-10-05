@@ -197,7 +197,7 @@ export class GameScene extends Phaser.Scene {
 
     this.input.on("pointerdown", (pointer) => {
       if (pointer.leftButtonDown()) {
-        this.combatSystem.startAttack1();
+        this.combatSystem.requestAbility("attack1");
       }
     });
 
@@ -246,17 +246,18 @@ export class GameScene extends Phaser.Scene {
 
   update() {
     this.player.update();
+    this.combatSystem.update();
 
     if (this.player.wantsToAttack()) {
-      this.combatSystem.startAttack1();
+      this.combatSystem.requestAbility("attack1");
     }
 
     if (this.player.wantsSkill2()) {
-      this.combatSystem.startDashAttack();
+      this.combatSystem.requestAbility("attack2");
     }
 
     if (this.player.wantsSkill3()) {
-      this.combatSystem.startSpinAttack();
+      this.combatSystem.requestAbility("attack3");
     }
 
     this.abilityHud.update();
