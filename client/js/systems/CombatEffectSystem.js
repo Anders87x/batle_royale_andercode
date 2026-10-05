@@ -15,11 +15,11 @@ const EFFECTS = {
   },
   attack1Secondary: {
     animationKey: "fx-attack1-secondary",
-    texturePrefix: "fx-attack1-secondary-",
+    texturePrefix: "fx-attack1-",
     frameCount: 8,
     frameRate: 34,
-    scale: 0.20,
-    delay: 95,
+    scale: 0.18,
+    delay: 105,
     nearEdgeInset: 18,
   },
   attack2: {
@@ -146,7 +146,7 @@ export class CombatEffectSystem {
         )
         .setScale(effect.scale * 0.82)
         .setAngle(angle)
-        .setAlpha(0.88)
+        .setAlpha(0.72)
         .setDepth(36);
 
       sprite.play(effect.animationKey);
@@ -155,7 +155,7 @@ export class CombatEffectSystem {
         targets: sprite,
         scaleX: effect.scale,
         scaleY: effect.scale,
-        alpha: { from: 0.65, to: 1 },
+        alpha: { from: 0.45, to: 0.78 },
         duration: 120,
         ease: "Quad.easeOut",
       });

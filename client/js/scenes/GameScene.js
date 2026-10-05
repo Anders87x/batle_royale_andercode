@@ -77,11 +77,6 @@ export class GameScene extends Phaser.Scene {
       );
 
       this.load.image(
-        `fx-attack1-secondary-${i}`,
-        `/assets/effects/attack1-secondary/${i}.png`
-      );
-
-      this.load.image(
         `fx-attack2-${i}`,
         `/assets/effects/attack2/${i}.png`
       );
