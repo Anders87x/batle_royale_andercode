@@ -6,8 +6,12 @@ const EFFECTS = {
     texturePrefix: "fx-attack1-",
     frameCount: 8,
     frameRate: 30,
-    scale: 0.28,
-    offset: 72,
+    scale: 0.27,
+    startOffset: 44,
+    endOffset: 82,
+    travelDuration: 190,
+    originX: 0.58,
+    originY: 0.56,
   },
   attack2: {
     animationKey: "fx-attack2",
@@ -57,22 +61,70 @@ export class CombatEffectSystem {
     });
   }
 
-  playAttack1() {
+  playAttack1(hitbox) {
     const effect = EFFECTS.attack1;
     const direction = this.player.getFacingVector();
     const angle = this.getDirectionAngle();
 
+    // Estela suave que coincide exactamente con el alcance real.
+    // No es la hitbox de debug: es feedback visual de gameplay.
+    const rangeGlow = this.scene.add
+      .rectangle(
+        hitbox.centerX,
+        hitbox.centerY,
+        hitbox.width,
+        hitbox.height,
+        0x38bdf8,
+        0.08
+      )
+      .setStrokeStyle(2, 0x7dd3fc, 0.28)
+      .setDepth(31)
+      .setAlpha(0);
+
+    this.scene.tweens.add({
+      targets: rangeGlow,
+      alpha: { from: 0, to: 1 },
+      duration: 55,
+      yoyo: true,
+      hold: 35,
+      onComplete: () => rangeGlow.destroy(),
+    });
+
+    const startX =
+      this.player.sprite.x + direction.x * effect.startOffset;
+    const startY =
+      this.player.sprite.y + direction.y * effect.startOffset;
+
+    const endX =
+      this.player.sprite.x + direction.x * effect.endOffset;
+    const endY =
+      this.player.sprite.y + direction.y * effect.endOffset;
+
     const sprite = this.scene.add
       .sprite(
-        this.player.sprite.x + direction.x * effect.offset,
-        this.player.sprite.y + direction.y * effect.offset,
+        startX,
+        startY,
         `${effect.texturePrefix}1`
       )
+      .setOrigin(effect.originX, effect.originY)
       .setScale(effect.scale)
       .setAngle(angle)
       .setDepth(35);
 
     sprite.play(effect.animationKey);
+
+    // El corte sale desde el mandoble hacia el límite real del ataque.
+    this.scene.tweens.add({
+      targets: sprite,
+      x: endX,
+      y: endY,
+      scaleX: effect.scale * 1.08,
+      scaleY: effect.scale * 1.08,
+      duration: effect.travelDuration,
+      ease: "Quad.easeOut",
+    });
+
+    this.scene.cameras.main.shake(55, 0.0012);
 
     sprite.once(
       Phaser.Animations.Events.ANIMATION_COMPLETE,

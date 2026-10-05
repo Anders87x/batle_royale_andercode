@@ -31,7 +31,12 @@ export class CombatSystem {
     }
 
     this.startCooldown("attack1");
-    this.effects?.playAttack1();
+
+    // Calculamos una sola vez el área real del golpe para que
+    // efecto visual y daño queden exactamente alineados.
+    const attackHitbox = this.getAttack1Hitbox();
+
+    this.effects?.playAttack1(attackHitbox);
 
     this.scene.time.delayedCall(
       ABILITIES.attack1.impactDelay,
@@ -41,7 +46,7 @@ export class CombatSystem {
           this.player.actionName === "attack1"
         ) {
           this.applyRectangleHit(
-            this.getAttack1Hitbox(),
+            attackHitbox,
             ABILITIES.attack1.damage,
             0xfacc15
           );
