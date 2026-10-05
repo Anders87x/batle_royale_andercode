@@ -176,15 +176,30 @@ io.on("connection", (socket) => {
 
   players.set(socket.id, player);
 
-  socket.emit("players:self", player);
-  socket.emit(
-    "players:init",
-    Array.from(players.values()).filter(
-      (item) => item.id !== socket.id
-    )
+  console.log(
+    `Jugador conectado: ${socket.id} · Total: ${players.size}`
   );
 
   socket.broadcast.emit("player:joined", player);
+  io.emit("players:count", players.size);
+
+  socket.on("players:sync", () => {
+    const current = players.get(socket.id);
+
+    if (!current) {
+      return;
+    }
+
+    socket.emit("players:self", current);
+    socket.emit(
+      "players:init",
+      Array.from(players.values()).filter(
+        (item) => item.id !== socket.id
+      )
+    );
+
+    socket.emit("players:count", players.size);
+  });
 
   socket.on("player:state", (state = {}) => {
     const current = players.get(socket.id);
@@ -293,9 +308,16 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     players.delete(socket.id);
+
+    console.log(
+      `Jugador desconectado: ${socket.id} · Total: ${players.size}`
+    );
+
     socket.broadcast.emit("player:left", {
       id: socket.id,
     });
+
+    io.emit("players:count", players.size);
   });
 });
 
