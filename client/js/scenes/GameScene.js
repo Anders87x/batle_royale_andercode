@@ -70,6 +70,21 @@ export class GameScene extends Phaser.Scene {
       "/assets/lobby/interior_objects.png"
     );
 
+    this.load.image(
+      "ability-icon-attack1",
+      "/assets/ui/abilities/attack1.png"
+    );
+
+    this.load.image(
+      "ability-icon-attack2",
+      "/assets/ui/abilities/attack2.png"
+    );
+
+    this.load.image(
+      "ability-icon-attack3",
+      "/assets/ui/abilities/attack3.png"
+    );
+
     for (let i = 1; i <= 8; i += 1) {
       this.load.image(
         `fx-attack1-${i}`,

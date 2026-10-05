@@ -4,6 +4,21 @@ import {
   GAME_WIDTH,
 } from "../config/game-config.js";
 
+const ICONS = {
+  attack1: {
+    texture: "ability-icon-attack1",
+    key: "LMB",
+  },
+  attack2: {
+    texture: "ability-icon-attack2",
+    key: "Q",
+  },
+  attack3: {
+    texture: "ability-icon-attack3",
+    key: "E",
+  },
+};
+
 export class AbilityHud {
   constructor(scene, combatSystem) {
     this.scene = scene;
@@ -15,93 +30,111 @@ export class AbilityHud {
 
   create() {
     const names = ["attack1", "attack2", "attack3"];
-    const panelWidth = 205;
-    const gap = 12;
+    const iconSize = 64;
+    const gap = 10;
+    const margin = 18;
     const totalWidth =
-      names.length * panelWidth + (names.length - 1) * gap;
-    const startX = (GAME_WIDTH - totalWidth) / 2;
-    const y = GAME_HEIGHT - 74;
+      names.length * iconSize + (names.length - 1) * gap;
+
+    const startX = GAME_WIDTH - margin - totalWidth;
+    const y = GAME_HEIGHT - margin - iconSize;
 
     names.forEach((name, index) => {
-      const ability = ABILITIES[name];
-      const x = startX + index * (panelWidth + gap);
+      const iconConfig = ICONS[name];
+      const x = startX + index * (iconSize + gap);
 
-      const background = this.scene.add
+      const frame = this.scene.add
         .rectangle(
-          x,
-          y,
-          panelWidth,
-          56,
-          0x0f172a,
-          0.9
+          x - 3,
+          y - 3,
+          iconSize + 6,
+          iconSize + 6,
+          0x111827,
+          0.96
         )
         .setOrigin(0, 0)
+        .setStrokeStyle(2, 0xe2e8f0, 0.8)
         .setScrollFactor(0)
         .setDepth(200);
 
+      const icon = this.scene.add
+        .image(
+          x + iconSize / 2,
+          y + iconSize / 2,
+          iconConfig.texture
+        )
+        .setDisplaySize(iconSize, iconSize)
+        .setScrollFactor(0)
+        .setDepth(201);
+
+      const cooldownOverlay = this.scene.add
+        .rectangle(
+          x,
+          y,
+          iconSize,
+          iconSize,
+          0x020617,
+          0.7
+        )
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(202)
+        .setVisible(false);
+
+      const cooldownText = this.scene.add
+        .text(
+          x + iconSize / 2,
+          y + iconSize / 2,
+          "",
+          {
+            fontFamily: "Arial",
+            fontSize: "22px",
+            fontStyle: "bold",
+            color: "#ffffff",
+            stroke: "#020617",
+            strokeThickness: 4,
+          }
+        )
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(204)
+        .setVisible(false);
+
+      const keyBackground = this.scene.add
+        .rectangle(
+          x + 4,
+          y + 4,
+          iconConfig.key === "LMB" ? 30 : 22,
+          18,
+          0x020617,
+          0.88
+        )
+        .setOrigin(0, 0)
+        .setScrollFactor(0)
+        .setDepth(205);
+
       const keyText = this.scene.add
-        .text(x + 10, y + 7, ability.keyLabel, {
-          fontFamily: "Arial",
-          fontSize: "13px",
-          fontStyle: "bold",
-          color: "#f8fafc",
-        })
-        .setScrollFactor(0)
-        .setDepth(201);
-
-      const labelText = this.scene.add
-        .text(x + 10, y + 25, ability.label, {
-          fontFamily: "Arial",
-          fontSize: "13px",
-          color: "#cbd5e1",
-        })
-        .setScrollFactor(0)
-        .setDepth(201);
-
-      const statusText = this.scene.add
-        .text(x + panelWidth - 10, y + 8, "LISTO", {
-          fontFamily: "Arial",
-          fontSize: "12px",
-          fontStyle: "bold",
-          color: "#ffffff",
-        })
-        .setOrigin(1, 0)
-        .setScrollFactor(0)
-        .setDepth(201);
-
-      const barBackground = this.scene.add
-        .rectangle(
-          x + 10,
-          y + 47,
-          panelWidth - 20,
-          5,
-          0x334155,
-          1
+        .text(
+          x + 8,
+          y + 6,
+          iconConfig.key,
+          {
+            fontFamily: "Arial",
+            fontSize: "11px",
+            fontStyle: "bold",
+            color: "#ffffff",
+          }
         )
-        .setOrigin(0, 0.5)
         .setScrollFactor(0)
-        .setDepth(201);
-
-      const bar = this.scene.add
-        .rectangle(
-          x + 10,
-          y + 47,
-          panelWidth - 20,
-          5,
-          0xe2e8f0,
-          1
-        )
-        .setOrigin(0, 0.5)
-        .setScrollFactor(0)
-        .setDepth(202);
+        .setDepth(206);
 
       this.items[name] = {
-        background,
+        frame,
+        icon,
+        cooldownOverlay,
+        cooldownText,
+        keyBackground,
         keyText,
-        labelText,
-        statusText,
-        barBackground,
-        bar,
       };
     });
   }
@@ -110,16 +143,32 @@ export class AbilityHud {
     Object.entries(this.items).forEach(([name, item]) => {
       const state = this.combatSystem.getCooldownState(name);
 
-      item.bar.setScale(state.progress, 1);
-
       if (state.ready) {
-        item.statusText.setText("LISTO");
+        item.icon.clearTint();
+        item.icon.setAlpha(1);
+        item.frame.setStrokeStyle(2, 0xe2e8f0, 0.8);
+        item.cooldownOverlay.setVisible(false);
+        item.cooldownText.setVisible(false);
         return;
       }
 
-      item.statusText.setText(
-        `${(state.remaining / 1000).toFixed(1)}s`
-      );
+      item.icon.setTint(0x777777);
+      item.icon.setAlpha(0.55);
+      item.frame.setStrokeStyle(2, 0x64748b, 0.65);
+
+      item.cooldownOverlay
+        .setVisible(true)
+        .setScale(1, 1 - state.progress);
+
+      const seconds = state.remaining / 1000;
+      const label =
+        seconds >= 10
+          ? Math.ceil(seconds).toString()
+          : seconds.toFixed(1);
+
+      item.cooldownText
+        .setText(label)
+        .setVisible(true);
     });
   }
 }
