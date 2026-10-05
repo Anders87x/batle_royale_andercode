@@ -1,7 +1,6 @@
 import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
-  GAME_HEIGHT,
   FRAME_SIZE,
 } from "../config/game-config.js";
 import { createSwordsmanAnimations } from "../animations/swordsmanAnimations.js";
@@ -9,6 +8,7 @@ import { Player } from "../entities/Player.js";
 import { TrainingDummy } from "../entities/TrainingDummy.js";
 import { CombatSystem } from "../systems/CombatSystem.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
+import { AbilityHud } from "../ui/AbilityHud.js";
 import { LobbyEnvironment } from "../world/LobbyEnvironment.js";
 
 const Phaser = window.Phaser;
@@ -149,9 +149,14 @@ export class GameScene extends Phaser.Scene {
       this.trainingDummies
     );
 
+    this.abilityHud = new AbilityHud(
+      this,
+      this.combatSystem
+    );
+
     this.input.on("pointerdown", (pointer) => {
       if (pointer.leftButtonDown()) {
-        this.combatSystem.startAttack();
+        this.combatSystem.startAttack1();
       }
     });
 
@@ -181,35 +186,16 @@ export class GameScene extends Phaser.Scene {
     this.add
       .text(
         18,
-        GAME_HEIGHT - 72,
-        "LOBBY | WASD: mover | Click izq. o SPACE: atacar",
+        18,
+        "WASD mover | LMB/SPACE ataque | Q embestida | E giro",
         {
           fontFamily: "Arial",
-          fontSize: "17px",
+          fontSize: "16px",
           color: "#ffffff",
           backgroundColor: "#000000aa",
           padding: {
             x: 10,
             y: 6,
-          },
-        }
-      )
-      .setScrollFactor(0)
-      .setDepth(100);
-
-    this.add
-      .text(
-        18,
-        GAME_HEIGHT - 38,
-        "Los 3 muñecos tienen 100 HP, reciben daño y bloquean el paso.",
-        {
-          fontFamily: "Arial",
-          fontSize: "14px",
-          color: "#d7e2ed",
-          backgroundColor: "#00000088",
-          padding: {
-            x: 8,
-            y: 5,
           },
         }
       )
@@ -221,7 +207,17 @@ export class GameScene extends Phaser.Scene {
     this.player.update();
 
     if (this.player.wantsToAttack()) {
-      this.combatSystem.startAttack();
+      this.combatSystem.startAttack1();
     }
+
+    if (this.player.wantsSkill2()) {
+      this.combatSystem.startDashAttack();
+    }
+
+    if (this.player.wantsSkill3()) {
+      this.combatSystem.startSpinAttack();
+    }
+
+    this.abilityHud.update();
   }
 }

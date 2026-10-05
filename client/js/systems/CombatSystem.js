@@ -1,7 +1,4 @@
-import {
-  ATTACK_DAMAGE,
-  ATTACK_IMPACT_DELAY,
-} from "../config/game-config.js";
+import { ABILITIES } from "../config/game-config.js";
 
 const Phaser = window.Phaser;
 
@@ -10,43 +7,220 @@ export class CombatSystem {
     this.scene = scene;
     this.player = player;
     this.targets = targets;
+
+    this.cooldownEnds = {
+      attack1: 0,
+      attack2: 0,
+      attack3: 0,
+    };
   }
 
-  startAttack() {
-    const started = this.player.beginAttack();
-
-    if (!started) {
-      return;
+  startAttack1() {
+    if (!this.canUse("attack1")) {
+      return false;
     }
 
-    this.scene.time.delayedCall(ATTACK_IMPACT_DELAY, () => {
-      if (this.player.isAttacking) {
-        this.applyAttackHit();
+    const started = this.player.beginAttack("attack1");
+
+    if (!started) {
+      return false;
+    }
+
+    this.startCooldown("attack1");
+
+    this.scene.time.delayedCall(
+      ABILITIES.attack1.impactDelay,
+      () => {
+        if (
+          this.player.isAttacking &&
+          this.player.actionName === "attack1"
+        ) {
+          this.applyRectangleHit(
+            this.getAttack1Hitbox(),
+            ABILITIES.attack1.damage,
+            0xfacc15
+          );
+        }
       }
-    });
+    );
+
+    return true;
   }
 
-  applyAttackHit() {
-    const attackHitbox = this.getAttackHitbox();
-    this.showHitboxDebug(attackHitbox);
+  startDashAttack() {
+    if (!this.canUse("attack2")) {
+      return false;
+    }
+
+    const started = this.player.beginAttack("attack2");
+
+    if (!started) {
+      return false;
+    }
+
+    this.startCooldown("attack2");
+
+    const direction = this.player.getFacingVector();
+    const startX = this.player.sprite.x;
+    const startY = this.player.sprite.y;
+
+    this.player.setForcedVelocity(
+      direction.x * ABILITIES.attack2.dashSpeed,
+      direction.y * ABILITIES.attack2.dashSpeed
+    );
+
+    this.scene.time.delayedCall(
+      ABILITIES.attack2.impactDelay,
+      () => {
+        if (
+          this.player.isAttacking &&
+          this.player.actionName === "attack2"
+        ) {
+          this.applyRectangleHit(
+            this.getDashHitbox(startX, startY, direction),
+            ABILITIES.attack2.damage,
+            0x38bdf8
+          );
+        }
+      }
+    );
+
+    this.scene.time.delayedCall(
+      ABILITIES.attack2.dashDuration,
+      () => {
+        if (this.player.actionName === "attack2") {
+          this.player.clearForcedVelocity();
+        }
+      }
+    );
+
+    return true;
+  }
+
+  startSpinAttack() {
+    if (!this.canUse("attack3")) {
+      return false;
+    }
+
+    const started = this.player.beginAttack("attack3");
+
+    if (!started) {
+      return false;
+    }
+
+    this.startCooldown("attack3");
+
+    this.scene.tweens.add({
+      targets: this.player.sprite,
+      angle: 360,
+      duration: 360,
+      ease: "Linear",
+      onComplete: () => {
+        this.player.sprite.setAngle(0);
+      },
+    });
+
+    this.scene.time.delayedCall(
+      ABILITIES.attack3.impactDelay,
+      () => {
+        if (
+          this.player.isAttacking &&
+          this.player.actionName === "attack3"
+        ) {
+          this.applyCircleHit(
+            this.getSpinHitbox(),
+            ABILITIES.attack3.damage
+          );
+        }
+      }
+    );
+
+    return true;
+  }
+
+  canUse(abilityName) {
+    return (
+      !this.player.isAttacking &&
+      this.scene.time.now >= this.cooldownEnds[abilityName]
+    );
+  }
+
+  startCooldown(abilityName) {
+    this.cooldownEnds[abilityName] =
+      this.scene.time.now + ABILITIES[abilityName].cooldown;
+  }
+
+  getCooldownState(abilityName) {
+    const ability = ABILITIES[abilityName];
+    const remaining = Math.max(
+      0,
+      this.cooldownEnds[abilityName] - this.scene.time.now
+    );
+
+    return {
+      ready: remaining <= 0,
+      remaining,
+      cooldown: ability.cooldown,
+      progress:
+        remaining <= 0
+          ? 1
+          : 1 - remaining / ability.cooldown,
+    };
+  }
+
+  applyRectangleHit(hitbox, damage, color) {
+    this.showRectangleDebug(hitbox, color);
 
     this.targets.forEach((target) => {
       if (!target.alive) {
         return;
       }
 
-      const didHit = Phaser.Geom.Rectangle.Overlaps(
-        attackHitbox,
-        target.getHurtbox()
-      );
-
-      if (didHit) {
-        target.takeDamage(ATTACK_DAMAGE);
+      if (
+        Phaser.Geom.Rectangle.Overlaps(
+          hitbox,
+          target.getHurtbox()
+        )
+      ) {
+        target.takeDamage(damage);
       }
     });
   }
 
-  getAttackHitbox() {
+  applyCircleHit(hitbox, damage) {
+    this.showCircleDebug(hitbox);
+
+    this.targets.forEach((target) => {
+      if (!target.alive) {
+        return;
+      }
+
+      if (this.circleIntersectsRectangle(hitbox, target.getHurtbox())) {
+        target.takeDamage(damage);
+      }
+    });
+  }
+
+  circleIntersectsRectangle(circle, rect) {
+    const nearestX = Phaser.Math.Clamp(
+      circle.x,
+      rect.left,
+      rect.right
+    );
+
+    const nearestY = Phaser.Math.Clamp(
+      circle.y,
+      rect.top,
+      rect.bottom
+    );
+
+    const dx = circle.x - nearestX;
+    const dy = circle.y - nearestY;
+
+    return dx * dx + dy * dy <= circle.radius * circle.radius;
+  }
+
+  getAttack1Hitbox() {
     const horizontalWidth = 110;
     const horizontalHeight = 76;
     const verticalWidth = 76;
@@ -91,21 +265,67 @@ export class CombatSystem {
     }
   }
 
-  showHitboxDebug(hitbox) {
+  getDashHitbox(startX, startY, direction) {
+    const range = ABILITIES.attack2.range;
+    const thickness = 72;
+
+    if (direction.x !== 0) {
+      return new Phaser.Geom.Rectangle(
+        direction.x > 0 ? startX : startX - range,
+        startY - thickness / 2,
+        range,
+        thickness
+      );
+    }
+
+    return new Phaser.Geom.Rectangle(
+      startX - thickness / 2,
+      direction.y > 0 ? startY : startY - range,
+      thickness,
+      range
+    );
+  }
+
+  getSpinHitbox() {
+    return new Phaser.Geom.Circle(
+      this.player.sprite.x,
+      this.player.sprite.y,
+      ABILITIES.attack3.radius
+    );
+  }
+
+  showRectangleDebug(hitbox, color) {
     const debugBox = this.scene.add
       .rectangle(
         hitbox.centerX,
         hitbox.centerY,
         hitbox.width,
         hitbox.height,
-        0xfacc15,
+        color,
         0.18
       )
-      .setStrokeStyle(2, 0xfde047, 0.95)
+      .setStrokeStyle(2, color, 0.95)
       .setDepth(30);
 
-    this.scene.time.delayedCall(130, () => {
+    this.scene.time.delayedCall(150, () => {
       debugBox.destroy();
+    });
+  }
+
+  showCircleDebug(hitbox) {
+    const debugCircle = this.scene.add
+      .circle(
+        hitbox.x,
+        hitbox.y,
+        hitbox.radius,
+        0xfb923c,
+        0.14
+      )
+      .setStrokeStyle(3, 0xfb923c, 0.95)
+      .setDepth(30);
+
+    this.scene.time.delayedCall(180, () => {
+      debugCircle.destroy();
     });
   }
 }

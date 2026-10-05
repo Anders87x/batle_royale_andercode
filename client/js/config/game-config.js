@@ -9,8 +9,33 @@ export const WORLD_HEIGHT = 900;
 export const FRAME_SIZE = 64;
 export const PLAYER_SPEED = 180;
 
-export const ATTACK_DAMAGE = 25;
-export const ATTACK_IMPACT_DELAY = 250;
+export const ABILITIES = {
+  attack1: {
+    label: "Ataque normal",
+    keyLabel: "LMB / SPACE",
+    damage: 25,
+    cooldown: 800,
+    impactDelay: 250,
+  },
+  attack2: {
+    label: "Embestida",
+    keyLabel: "Q",
+    damage: 35,
+    cooldown: 4000,
+    impactDelay: 100,
+    dashSpeed: 650,
+    dashDuration: 230,
+    range: 220,
+  },
+  attack3: {
+    label: "Giro 360°",
+    keyLabel: "E",
+    damage: 30,
+    cooldown: 7000,
+    impactDelay: 170,
+    radius: 115,
+  },
+};
 
 export const ENEMY_MAX_HP = 100;
 export const ENEMY_FACING = "left";

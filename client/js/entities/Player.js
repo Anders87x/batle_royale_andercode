@@ -7,6 +7,8 @@ export class Player {
     this.scene = scene;
     this.facing = "down";
     this.isAttacking = false;
+    this.actionName = null;
+    this.forcedVelocity = null;
 
     this.sprite = scene.physics.add
       .sprite(x, y, "swordsman-idle", 0)
@@ -24,6 +26,14 @@ export class Player {
 
     this.attackKey = scene.input.keyboard.addKey(
       Phaser.Input.Keyboard.KeyCodes.SPACE
+    );
+
+    this.skill2Key = scene.input.keyboard.addKey(
+      Phaser.Input.Keyboard.KeyCodes.Q
+    );
+
+    this.skill3Key = scene.input.keyboard.addKey(
+      Phaser.Input.Keyboard.KeyCodes.E
     );
   }
 
@@ -43,13 +53,23 @@ export class Player {
     return Phaser.Input.Keyboard.JustDown(this.attackKey);
   }
 
-  beginAttack() {
+  wantsSkill2() {
+    return Phaser.Input.Keyboard.JustDown(this.skill2Key);
+  }
+
+  wantsSkill3() {
+    return Phaser.Input.Keyboard.JustDown(this.skill3Key);
+  }
+
+  beginAttack(actionName = "attack1") {
     if (this.isAttacking) {
       return false;
     }
 
     this.syncFacingFromInput();
     this.isAttacking = true;
+    this.actionName = actionName;
+    this.forcedVelocity = null;
     this.stopMovement();
 
     const attackAnimationKey = `attack-${this.facing}`;
@@ -62,12 +82,44 @@ export class Player {
           return;
         }
 
-        this.isAttacking = false;
-        this.sprite.play(`idle-${this.facing}`, true);
+        this.finishAction();
       }
     );
 
     return true;
+  }
+
+  finishAction() {
+    this.isAttacking = false;
+    this.actionName = null;
+    this.forcedVelocity = null;
+    this.stopMovement();
+    this.sprite.setAngle(0);
+    this.sprite.play(`idle-${this.facing}`, true);
+  }
+
+  setForcedVelocity(x, y) {
+    this.forcedVelocity = { x, y };
+    this.sprite.setVelocity(x, y);
+  }
+
+  clearForcedVelocity() {
+    this.forcedVelocity = null;
+    this.stopMovement();
+  }
+
+  getFacingVector() {
+    switch (this.facing) {
+      case "up":
+        return { x: 0, y: -1 };
+      case "down":
+        return { x: 0, y: 1 };
+      case "left":
+        return { x: -1, y: 0 };
+      case "right":
+      default:
+        return { x: 1, y: 0 };
+    }
   }
 
   stopMovement() {
@@ -76,7 +128,15 @@ export class Player {
 
   update() {
     if (this.isAttacking) {
-      this.stopMovement();
+      if (this.forcedVelocity) {
+        this.sprite.setVelocity(
+          this.forcedVelocity.x,
+          this.forcedVelocity.y
+        );
+      } else {
+        this.stopMovement();
+      }
+
       return;
     }
 
