@@ -448,6 +448,17 @@ io.on("connection", (socket) => {
 
     current.ready = Boolean(ready);
 
+    console.log(
+      `Jugador ${socket.id} READY: ${current.ready}`
+    );
+
+    socket.emit(
+      "match:ready-ack",
+      {
+        ready: current.ready,
+      }
+    );
+
     if (
       match.phase === "countdown" &&
       !current.ready

@@ -1,8 +1,6 @@
 import { RemotePlayer } from "../entities/RemotePlayer.js";
 import { MatchHud } from "../ui/MatchHud.js";
 
-const Phaser = window.Phaser;
-
 export class NetworkSystem {
   constructor(scene, player) {
     this.scene = scene;
@@ -22,14 +20,11 @@ export class NetworkSystem {
       players: [],
     };
 
-    this.readyKey =
-      scene.input.keyboard.addKey(
-        Phaser.Input.Keyboard.KeyCodes.R
-      );
-
     this.createStatusHud();
     this.matchHud =
       new MatchHud(scene, this);
+
+    this.configureReadyInput();
 
     if (typeof window.io !== "function") {
       this.setStatus(
@@ -86,6 +81,19 @@ export class NetworkSystem {
           .toString(16)
           .padStart(6, "0")}`
       );
+  }
+
+  configureReadyInput() {
+    this.scene.input.keyboard.on(
+      "keydown-R",
+      (event) => {
+        if (event.repeat) {
+          return;
+        }
+
+        this.toggleReady();
+      }
+    );
   }
 
   configureSocket() {
@@ -177,6 +185,15 @@ export class NetworkSystem {
             "match-returned-to-lobby"
           );
         }
+      }
+    );
+
+    this.socket.on(
+      "match:ready-ack",
+      ({ ready }) => {
+        this.setLocalReadyState(
+          Boolean(ready)
+        );
       }
     );
 
@@ -447,6 +464,30 @@ export class NetworkSystem {
     return remote;
   }
 
+  setLocalReadyState(ready) {
+    if (!this.socket?.id) {
+      return;
+    }
+
+    this.matchState = {
+      ...this.matchState,
+      players:
+        this.matchState.players.map(
+          (player) =>
+            player.id === this.socket.id
+              ? {
+                  ...player,
+                  ready,
+                }
+              : player
+        ),
+    };
+
+    this.matchHud.applyState(
+      this.matchState
+    );
+  }
+
   toggleReady() {
     if (
       !this.socket?.connected ||
@@ -464,10 +505,18 @@ export class NetworkSystem {
           this.socket.id
       );
 
+    const nextReady =
+      !Boolean(self?.ready);
+
+    // Feedback inmediato al pulsar R.
+    this.setLocalReadyState(
+      nextReady
+    );
+
     this.socket.emit(
       "match:ready",
       {
-        ready: !self?.ready,
+        ready: nextReady,
       }
     );
   }
@@ -484,14 +533,6 @@ export class NetworkSystem {
   }
 
   update() {
-    if (
-      Phaser.Input.Keyboard.JustDown(
-        this.readyKey
-      )
-    ) {
-      this.toggleReady();
-    }
-
     this.matchHud.update();
 
     this.remotePlayers.forEach(

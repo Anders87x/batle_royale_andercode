@@ -201,7 +201,9 @@ export class MatchHud {
 
     if (playerCount < minPlayers) {
       this.detailText.setText(
-        `Esperando rival · mínimo ${minPlayers}`
+        self?.ready
+          ? `LISTO ✓ · esperando rival · R para cancelar`
+          : `Esperando rival · mínimo ${minPlayers} · R = LISTO`
       );
       return;
     }
