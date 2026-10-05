@@ -28,10 +28,13 @@ const IDLE_FRAMES_BY_DIRECTION = {
 
 const IDLE_COLUMNS = 12;
 const WALK_FRAMES_PER_DIRECTION = 6;
+const ATTACK_FRAMES_PER_DIRECTION = 8;
 
 let player;
 let movementKeys;
+let attackKey;
 let facing = "down";
+let isAttacking = false;
 
 function preload() {
   this.load.spritesheet(
@@ -51,6 +54,15 @@ function preload() {
       frameHeight: FRAME_SIZE,
     }
   );
+
+  this.load.spritesheet(
+    "swordsman-attack",
+    "/assets/characters/swordsman/attack.png",
+    {
+      frameWidth: FRAME_SIZE,
+      frameHeight: FRAME_SIZE,
+    }
+  );
 }
 
 function createDirectionalAnimations(scene) {
@@ -58,6 +70,7 @@ function createDirectionalAnimations(scene) {
     const idleStart = row * IDLE_COLUMNS;
     const idleFrameCount = IDLE_FRAMES_BY_DIRECTION[direction];
     const walkStart = row * WALK_FRAMES_PER_DIRECTION;
+    const attackStart = row * ATTACK_FRAMES_PER_DIRECTION;
 
     scene.anims.create({
       key: `idle-${direction}`,
@@ -78,6 +91,49 @@ function createDirectionalAnimations(scene) {
       frameRate: 10,
       repeat: -1,
     });
+
+    scene.anims.create({
+      key: `attack-${direction}`,
+      frames: scene.anims.generateFrameNumbers("swordsman-attack", {
+        start: attackStart,
+        end: attackStart + ATTACK_FRAMES_PER_DIRECTION - 1,
+      }),
+      frameRate: 14,
+      repeat: 0,
+    });
+  });
+}
+
+function updateFacingFromKeys() {
+  if (movementKeys.up.isDown) {
+    facing = "up";
+  } else if (movementKeys.down.isDown) {
+    facing = "down";
+  } else if (movementKeys.left.isDown) {
+    facing = "left";
+  } else if (movementKeys.right.isDown) {
+    facing = "right";
+  }
+}
+
+function startAttack() {
+  if (isAttacking) {
+    return;
+  }
+
+  isAttacking = true;
+
+  const attackAnimationKey = `attack-${facing}`;
+
+  player.play(attackAnimationKey, true);
+
+  player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, (animation) => {
+    if (animation.key !== attackAnimationKey) {
+      return;
+    }
+
+    isAttacking = false;
+    player.play(`idle-${facing}`, true);
   });
 }
 
@@ -103,8 +159,19 @@ function create() {
     right: Phaser.Input.Keyboard.KeyCodes.D,
   });
 
+  attackKey = this.input.keyboard.addKey(
+    Phaser.Input.Keyboard.KeyCodes.SPACE
+  );
+
+  // El click izquierdo también ejecuta el ataque normal.
+  this.input.on("pointerdown", (pointer) => {
+    if (pointer.leftButtonDown()) {
+      startAttack();
+    }
+  });
+
   this.add
-    .text(18, 18, "WASD: mover personaje", {
+    .text(18, 18, "WASD: mover | Click izq. o SPACE: atacar", {
       fontFamily: "Arial",
       fontSize: "18px",
       color: "#ffffff",
@@ -139,6 +206,22 @@ function update(_time, delta) {
 
   const isMoving = moveX !== 0 || moveY !== 0;
 
+  // Si el jugador pulsa una dirección y ataca en el mismo instante,
+  // usamos esa nueva dirección para orientar el mandoble.
+  if (isMoving && !isAttacking) {
+    updateFacingFromKeys();
+  }
+
+  if (Phaser.Input.Keyboard.JustDown(attackKey)) {
+    startAttack();
+  }
+
+  // Durante el ataque bloqueamos temporalmente el movimiento y evitamos
+  // que Idle o Walk interrumpan la animación.
+  if (isAttacking) {
+    return;
+  }
+
   if (!isMoving) {
     player.play(`idle-${facing}`, true);
     return;
@@ -160,18 +243,6 @@ function update(_time, delta) {
 
   player.x = Phaser.Math.Clamp(player.x, margin, GAME_WIDTH - margin);
   player.y = Phaser.Math.Clamp(player.y, margin, GAME_HEIGHT - margin);
-
-  // Para las diagonales usamos como dirección visual
-  // el eje que el jugador está pulsando verticalmente primero.
-  if (movementKeys.up.isDown) {
-    facing = "up";
-  } else if (movementKeys.down.isDown) {
-    facing = "down";
-  } else if (movementKeys.left.isDown) {
-    facing = "left";
-  } else if (movementKeys.right.isDown) {
-    facing = "right";
-  }
 
   player.play(`walk-${facing}`, true);
 }
