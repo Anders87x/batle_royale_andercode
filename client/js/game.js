@@ -15,7 +15,18 @@ const DIRECTIONS = {
   up: 3,
 };
 
-const IDLE_FRAMES_PER_DIRECTION = 12;
+// Este spritesheet tiene una particularidad:
+// abajo, derecha e izquierda usan 12 frames de Idle,
+// pero la fila de espalda / arriba solo contiene 4 frames.
+// Los demás cuadros de esa fila están vacíos.
+const IDLE_FRAMES_BY_DIRECTION = {
+  down: 12,
+  right: 12,
+  left: 12,
+  up: 4,
+};
+
+const IDLE_COLUMNS = 12;
 const WALK_FRAMES_PER_DIRECTION = 6;
 
 let player;
@@ -44,14 +55,15 @@ function preload() {
 
 function createDirectionalAnimations(scene) {
   Object.entries(DIRECTIONS).forEach(([direction, row]) => {
-    const idleStart = row * IDLE_FRAMES_PER_DIRECTION;
+    const idleStart = row * IDLE_COLUMNS;
+    const idleFrameCount = IDLE_FRAMES_BY_DIRECTION[direction];
     const walkStart = row * WALK_FRAMES_PER_DIRECTION;
 
     scene.anims.create({
       key: `idle-${direction}`,
       frames: scene.anims.generateFrameNumbers("swordsman-idle", {
         start: idleStart,
-        end: idleStart + IDLE_FRAMES_PER_DIRECTION - 1,
+        end: idleStart + idleFrameCount - 1,
       }),
       frameRate: 8,
       repeat: -1,
