@@ -20,21 +20,14 @@ export class LobbyEnvironment {
     const interior = this.scene.textures.get("lobby-interior");
     const walls = this.scene.textures.get("lobby-walls");
 
-    // Dragon completo: el recorte llega hasta el borde derecho del atlas
-    // para conservar la punta final de la cola.
     interior.add("dragon-skeleton", 0, 176, 0, 208, 96);
-
-    // Adornos reales del pack de descarga2.
     interior.add("notice-board", 0, 0, 192, 64, 64);
-    interior.add("notice-board-alt", 0, 64, 192, 64, 64);
     interior.add("bookshelf", 0, 256, 96, 64, 96);
     interior.add("bookshelf-alt", 0, 320, 96, 64, 96);
     interior.add("weapon-display", 0, 288, 192, 64, 64);
     interior.add("guild-banner", 0, 192, 320, 64, 64);
     interior.add("weapon-rack", 0, 0, 320, 64, 64);
 
-    // Segmento real de pared interior del pack.
-    // Incluye ventanas y puertas ya dibujadas en pixel art.
     walls.add("guild-wall-strip", 0, 0, 64, 288, 64);
   }
 
@@ -86,55 +79,101 @@ export class LobbyEnvironment {
   }
 
   createSpriteDecorations() {
-    // Todo lo que aparece aquí proviene de descarga2.
-    // Ya no dibujamos ventanas, escudos ni armas con Graphics.
+    // Módulos reales del pack, alineados a grilla y sin escalas fraccionarias.
+    const wallY = 72;
+    const wallStarts = [144, 432, 720, 1008];
 
-    this.scene.add
-      .image(430, 105, "lobby-walls", "guild-wall-strip")
-      .setScale(1.75)
-      .setDepth(-4);
+    wallStarts.forEach((x) => {
+      this.addDecoration(
+        x,
+        wallY,
+        "lobby-walls",
+        "guild-wall-strip",
+        1,
+        -5
+      );
+    });
 
-    this.scene.add
-      .image(1010, 105, "lobby-walls", "guild-wall-strip")
-      .setScale(1.75)
-      .setDepth(-4)
-      .setFlipX(true);
+    this.addDecoration(
+      64,
+      72,
+      "lobby-interior",
+      "bookshelf",
+      1,
+      -2
+    );
 
-    this.scene.add
-      .image(155, 112, "lobby-interior", "bookshelf")
-      .setScale(1.25)
-      .setDepth(-2);
+    this.addDecoration(
+      1312,
+      72,
+      "lobby-interior",
+      "bookshelf-alt",
+      1,
+      -2
+    );
 
-    this.scene.add
-      .image(WORLD_WIDTH - 155, 112, "lobby-interior", "bookshelf-alt")
-      .setScale(1.25)
-      .setDepth(-2);
+    this.addDecoration(
+      208,
+      96,
+      "lobby-interior",
+      "notice-board",
+      1,
+      -1
+    );
 
-    this.scene.add
-      .image(295, 118, "lobby-interior", "notice-board")
-      .setScale(1.2)
-      .setDepth(-2);
+    this.addDecoration(
+      1168,
+      96,
+      "lobby-interior",
+      "weapon-display",
+      1,
+      -1
+    );
 
-    this.scene.add
-      .image(WORLD_WIDTH - 295, 118, "lobby-interior", "weapon-display")
-      .setScale(1.2)
-      .setDepth(-2);
+    this.addDecoration(
+      688,
+      80,
+      "lobby-interior",
+      "guild-banner",
+      1,
+      0
+    );
 
-    this.scene.add
-      .image(WORLD_WIDTH / 2, 105, "lobby-interior", "guild-banner")
-      .setScale(1.35)
-      .setDepth(-1);
+    this.addDecoration(
+      48,
+      104,
+      "lobby-interior",
+      "weapon-rack",
+      1,
+      -1
+    );
 
-    this.scene.add
-      .image(70, 118, "lobby-interior", "weapon-rack")
-      .setScale(1.15)
-      .setDepth(-2);
+    this.addDecoration(
+      1328,
+      104,
+      "lobby-interior",
+      "weapon-rack",
+      1,
+      -1,
+      true
+    );
+  }
 
-    this.scene.add
-      .image(WORLD_WIDTH - 70, 118, "lobby-interior", "weapon-rack")
-      .setScale(1.15)
-      .setDepth(-2)
-      .setFlipX(true);
+  addDecoration(
+    x,
+    y,
+    texture,
+    frame,
+    scale = 1,
+    depth = 0,
+    flipX = false
+  ) {
+    return this.scene.add
+      .image(x, y, texture, frame)
+      .setOrigin(0, 0)
+      .setScale(scale)
+      .setDepth(depth)
+      .setFlipX(flipX);
   }
 
   createGuildExhibit() {
@@ -153,7 +192,7 @@ export class LobbyEnvironment {
 
     this.scene.add
       .image(centerX, 302, "lobby-interior", "dragon-skeleton")
-      .setScale(2.05)
+      .setScale(2)
       .setDepth(1);
 
     this.scene.add

@@ -1,6 +1,7 @@
 import {
   WORLD_WIDTH,
   WORLD_HEIGHT,
+  GAME_HEIGHT,
   FRAME_SIZE,
 } from "../config/game-config.js";
 import { createSwordsmanAnimations } from "../animations/swordsmanAnimations.js";
@@ -185,7 +186,7 @@ export class GameScene extends Phaser.Scene {
     this.add
       .text(
         18,
-        18,
+        GAME_HEIGHT - 72,
         "LOBBY | WASD: mover | Click izq. o SPACE: atacar",
         {
           fontFamily: "Arial",
@@ -204,7 +205,7 @@ export class GameScene extends Phaser.Scene {
     this.add
       .text(
         18,
-        52,
+        GAME_HEIGHT - 38,
         "Los 3 muñecos tienen 100 HP, reciben daño y bloquean el paso.",
         {
           fontFamily: "Arial",
