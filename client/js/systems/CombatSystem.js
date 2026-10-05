@@ -96,6 +96,10 @@ export class CombatSystem {
     }
 
     this.startCooldown("attack1");
+    this.scene.events.emit(
+      "local-player-attack",
+      "attack1"
+    );
 
     // Calculamos una sola vez el área real del golpe para que
     // efecto visual y daño queden exactamente alineados.
@@ -135,6 +139,10 @@ export class CombatSystem {
     }
 
     this.startCooldown("attack2");
+    this.scene.events.emit(
+      "local-player-attack",
+      "attack2"
+    );
 
     const direction = this.player.getFacingVector();
     const startX = this.player.sprite.x;
@@ -188,6 +196,10 @@ export class CombatSystem {
     }
 
     this.startCooldown("attack3");
+    this.scene.events.emit(
+      "local-player-attack",
+      "attack3"
+    );
     this.effects?.playSpinAttack();
 
     this.scene.tweens.add({

@@ -5,6 +5,8 @@ const Phaser = window.Phaser;
 export class Player {
   constructor(scene, x, y) {
     this.scene = scene;
+    this.spawnX = x;
+    this.spawnY = y;
     this.facing = "down";
     this.isAttacking = false;
     this.isHurt = false;
@@ -70,6 +72,15 @@ export class Player {
     return !this.isDead && !this.isHurt;
   }
 
+  setSpawnPosition(x, y, moveNow = false) {
+    this.spawnX = x;
+    this.spawnY = y;
+
+    if (moveNow) {
+      this.sprite.setPosition(x, y);
+    }
+  }
+
   beginAttack(actionName = "attack1") {
     if (this.isAttacking || !this.canAct()) {
       return false;
@@ -111,12 +122,20 @@ export class Player {
     this.sprite.play(`idle-${this.facing}`, true);
   }
 
-  takeDamage(amount) {
+  takeDamage(
+    amount,
+    {
+      sync = true,
+      authoritativeHp = null,
+    } = {}
+  ) {
     if (this.isDead) {
       return false;
     }
 
-    this.hp = Math.max(0, this.hp - amount);
+    this.hp = Number.isFinite(authoritativeHp)
+      ? Math.max(0, Math.min(this.maxHp, authoritativeHp))
+      : Math.max(0, this.hp - amount);
     this.isAttacking = false;
     this.actionName = null;
     this.forcedVelocity = null;
@@ -124,8 +143,12 @@ export class Player {
     this.sprite.setAngle(0);
 
     if (this.hp === 0) {
-      this.die();
+      this.die(sync);
       return true;
+    }
+
+    if (sync) {
+      this.notifyHealthChanged();
     }
 
     this.isHurt = true;
@@ -150,7 +173,7 @@ export class Player {
     return true;
   }
 
-  die() {
+  die(sync = true) {
     this.isDead = true;
     this.isHurt = false;
     this.isAttacking = false;
@@ -163,6 +186,44 @@ export class Player {
     }
 
     this.sprite.play(`death-${this.facing}`, true);
+
+    if (sync) {
+      this.notifyHealthChanged();
+    }
+
+    this.scene.events.emit("player-died");
+  }
+
+  respawn(sync = true) {
+    this.hp = this.maxHp;
+    this.isDead = false;
+    this.isHurt = false;
+    this.isAttacking = false;
+    this.actionName = null;
+    this.forcedVelocity = null;
+    this.sprite.body.enable = true;
+    this.sprite.clearTint();
+    this.sprite.setAlpha(1);
+    this.sprite.setAngle(0);
+    this.sprite.setPosition(
+      this.spawnX,
+      this.spawnY
+    );
+    this.sprite.play(`idle-${this.facing}`, true);
+
+    if (sync) {
+      this.notifyHealthChanged();
+    }
+  }
+
+  notifyHealthChanged() {
+    this.scene.events.emit(
+      "local-player-health",
+      {
+        hp: this.hp,
+        isDead: this.isDead,
+      }
+    );
   }
 
   heal(amount) {
@@ -171,6 +232,7 @@ export class Player {
     }
 
     this.hp = Math.min(this.maxHp, this.hp + amount);
+    this.notifyHealthChanged();
   }
 
   setForcedVelocity(x, y) {

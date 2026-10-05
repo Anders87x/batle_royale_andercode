@@ -6,9 +6,11 @@ import {
 import { createSwordsmanAnimations } from "../animations/swordsmanAnimations.js";
 import { Player } from "../entities/Player.js";
 import { TrainingDummy } from "../entities/TrainingDummy.js";
+import { TrainingEnemy } from "../entities/TrainingEnemy.js";
 import { CombatSystem } from "../systems/CombatSystem.js";
 import { CombatEffectSystem } from "../systems/CombatEffectSystem.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
+import { NetworkSystem } from "../systems/NetworkSystem.js";
 import { AbilityHud } from "../ui/AbilityHud.js";
 import { PlayerHud } from "../ui/PlayerHud.js";
 import { LobbyEnvironment } from "../world/LobbyEnvironment.js";
@@ -164,12 +166,16 @@ export class GameScene extends Phaser.Scene {
         textureKey: "mannequin-2",
         name: "Dummy B",
       }),
-      new TrainingDummy(this, {
-        x: 1175,
-        y: 650,
-        textureKey: "mannequin-3",
-        name: "Dummy C",
-      }),
+      new TrainingEnemy(
+        this,
+        {
+          x: 1175,
+          y: 650,
+          textureKey: "mannequin-3",
+          name: "Dummy C",
+        },
+        this.player
+      ),
     ];
 
     this.collisionSystem = new CollisionSystem(
@@ -201,6 +207,16 @@ export class GameScene extends Phaser.Scene {
       this.player
     );
 
+    this.networkSystem = new NetworkSystem(
+      this,
+      this.player
+    );
+
+    this.events.on(
+      "player-died",
+      () => this.handlePlayerDeath()
+    );
+
     this.input.on("pointerdown", (pointer) => {
       if (pointer.leftButtonDown()) {
         this.combatSystem.requestAbility("attack1");
@@ -208,7 +224,6 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.configureCamera();
-    this.createInstructions();
   }
 
   configureCamera() {
@@ -229,30 +244,50 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setRoundPixels(true);
   }
 
-  createInstructions() {
-    this.add
+  handlePlayerDeath() {
+    if (this.respawnPending) {
+      return;
+    }
+
+    this.respawnPending = true;
+
+    const message = this.add
       .text(
-        18,
-        18,
-        "WASD mover | LMB/SPACE ataque | Q embestida | E giro",
+        480,
+        220,
+        "ELIMINADO\nReapareciendo...",
         {
           fontFamily: "Arial",
-          fontSize: "16px",
+          fontSize: "30px",
+          fontStyle: "bold",
+          align: "center",
           color: "#ffffff",
-          backgroundColor: "#000000aa",
+          backgroundColor: "#7f1d1ddd",
           padding: {
-            x: 10,
-            y: 6,
+            x: 20,
+            y: 12,
           },
         }
       )
+      .setOrigin(0.5)
       .setScrollFactor(0)
-      .setDepth(100);
+      .setDepth(500);
+
+    this.time.delayedCall(2500, () => {
+      message.destroy();
+      this.player.respawn();
+      this.respawnPending = false;
+    });
   }
 
   update() {
     this.player.update();
+    this.trainingDummies.forEach((target) => {
+      target.update?.();
+    });
+
     this.combatSystem.update();
+    this.networkSystem.update();
 
     if (this.player.wantsToAttack()) {
       this.combatSystem.requestAbility("attack1");

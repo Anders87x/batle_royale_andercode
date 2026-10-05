@@ -67,6 +67,27 @@ export class TrainingDummy {
     });
   }
 
+  update() {
+    this.syncHudPosition();
+  }
+
+  syncHudPosition() {
+    this.label.setPosition(
+      this.sprite.x,
+      this.sprite.y - 64
+    );
+
+    this.hpBarBackground.setPosition(
+      this.sprite.x - 36,
+      this.sprite.y - 44
+    );
+
+    this.hpBar.setPosition(
+      this.sprite.x - 36,
+      this.sprite.y - 44
+    );
+  }
+
   getHurtbox() {
     return new Phaser.Geom.Rectangle(
       this.sprite.x - 24,
@@ -120,17 +141,10 @@ export class TrainingDummy {
     const dx = (direction.x / length) * strength;
     const dy = (direction.y / length) * strength;
 
-    const targets = [
-      this.sprite,
-      this.label,
-      this.hpBarBackground,
-      this.hpBar,
-    ];
-
-    this.scene.tweens.killTweensOf(targets);
+    this.scene.tweens.killTweensOf(this.sprite);
 
     this.scene.tweens.add({
-      targets,
+      targets: this.sprite,
       x: `+=${dx}`,
       y: `+=${dy}`,
       duration: 115,
@@ -174,23 +188,10 @@ export class TrainingDummy {
     this.hp = this.maxHp;
     this.alive = true;
 
-    this.scene.tweens.killTweensOf([
-      this.sprite,
-      this.label,
-      this.hpBarBackground,
-      this.hpBar,
-    ]);
+    this.scene.tweens.killTweensOf(this.sprite);
 
     this.sprite.setPosition(this.spawnX, this.spawnY);
-    this.label.setPosition(this.spawnX, this.spawnY - 64);
-    this.hpBarBackground.setPosition(
-      this.spawnX - 36,
-      this.spawnY - 44
-    );
-    this.hpBar.setPosition(
-      this.spawnX - 36,
-      this.spawnY - 44
-    );
+    this.syncHudPosition();
 
     this.sprite.body.enable = true;
     this.sprite.clearTint();
