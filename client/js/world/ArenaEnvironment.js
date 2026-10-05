@@ -4,6 +4,23 @@ import {
   WORLD_HEIGHT,
 } from "../config/game-config.js";
 
+// Frames usados por las capas "bricks" y "darker_surface"
+// del TMX original. Aquí ya están convertidos de GID a frame (GID - 1).
+const STONE_FLOOR_FRAMES = [
+  521, 523, 525, 527, 529,
+  934, 978, 980, 1004, 1005,
+  1006, 1012, 1037, 1038,
+];
+
+const DARK_FLOOR_FRAMES = [
+  1468, 1469, 1470, 1471, 1472,
+  1494, 1495, 1496, 1520, 1521,
+  1522, 1523, 1524,
+];
+
+const GROUND_SCALE = 2;
+const GROUND_STEP = 16 * GROUND_SCALE;
+
 const OBSTACLES = [
   {
     key: "undead-tree",
@@ -166,8 +183,7 @@ export class ArenaEnvironment {
   }
 
   drawGround() {
-    // El TMX original usa mayormente el GID 55 para el suelo.
-    // Como el firstgid del tileset es 1, corresponde al frame 54.
+    // Base real del tileset. El GID 55 del TMX corresponde al frame 54.
     this.scene.add
       .tileSprite(
         ARENA_X,
@@ -180,34 +196,44 @@ export class ArenaEnvironment {
       .setOrigin(0, 0)
       .setDepth(-30);
 
-    // Variación visual encima del tile real para evitar que se vea
-    // demasiado uniforme sin tapar el pixel art del suelo.
+    // El frame 54 es intencionalmente liso. En el mapa original,
+    // el aspecto rocoso aparece al combinarlo con capas de ladrillos
+    // y superficies oscuras. Recreamos esa composición aquí.
+    this.paintDarkPatch(
+      1900,
+      520,
+      145,
+      105
+    );
+
+    this.paintDarkPatch(
+      2630,
+      345,
+      150,
+      95
+    );
+
+    this.paintDarkPatch(
+      2290,
+      735,
+      170,
+      80
+    );
+
+    this.paintDarkPatch(
+      2760,
+      690,
+      105,
+      75
+    );
+
+    this.paintStonePath();
+    this.paintSecondaryStonePath();
+
     const graphics =
       this.scene.add
         .graphics()
-        .setDepth(-29);
-
-    graphics.fillStyle(
-      0x27322c,
-      0.16
-    );
-
-    const darkPatches = [
-      [1900, 520, 180, 85],
-      [2620, 350, 180, 90],
-      [2320, 720, 220, 72],
-    ];
-
-    darkPatches.forEach(
-      ([x, y, width, height]) => {
-        graphics.fillEllipse(
-          x,
-          y,
-          width,
-          height
-        );
-      }
-    );
+        .setDepth(-27);
 
     graphics.lineStyle(
       4,
@@ -243,6 +269,190 @@ export class ArenaEnvironment {
       )
       .setOrigin(0.5)
       .setDepth(-3);
+  }
+
+  paintGroundTile(
+    x,
+    y,
+    frame,
+    depth = -28,
+    alpha = 1
+  ) {
+    this.scene.add
+      .image(
+        x,
+        y,
+        "undead-ground-rocks",
+        frame
+      )
+      .setScale(
+        GROUND_SCALE
+      )
+      .setAlpha(alpha)
+      .setDepth(depth);
+  }
+
+  paintDarkPatch(
+    centerX,
+    centerY,
+    radiusX,
+    radiusY
+  ) {
+    let row = 0;
+
+    for (
+      let y =
+        centerY - radiusY;
+      y <=
+        centerY + radiusY;
+      y += GROUND_STEP
+    ) {
+      let column = 0;
+
+      for (
+        let x =
+          centerX - radiusX;
+        x <=
+          centerX + radiusX;
+        x += GROUND_STEP
+      ) {
+        const dx =
+          (x - centerX) /
+          radiusX;
+
+        const dy =
+          (y - centerY) /
+          radiusY;
+
+        if (
+          dx * dx +
+            dy * dy >
+          1
+        ) {
+          column += 1;
+          continue;
+        }
+
+        const frame =
+          DARK_FLOOR_FRAMES[
+            (
+              row * 5 +
+              column * 7
+            ) %
+              DARK_FLOOR_FRAMES.length
+          ];
+
+        this.paintGroundTile(
+          x,
+          y,
+          frame,
+          -29,
+          0.92
+        );
+
+        column += 1;
+      }
+
+      row += 1;
+    }
+  }
+
+  paintStonePath() {
+    let index = 0;
+
+    for (
+      let x =
+        ARENA_X + 105;
+      x <=
+        ARENA_X +
+          ARENA_WIDTH -
+          105;
+      x += GROUND_STEP
+    ) {
+      const centerY =
+        455 +
+        Math.sin(
+          (
+            x -
+            ARENA_X
+          ) /
+            125
+        ) *
+          42;
+
+      [-GROUND_STEP, 0, GROUND_STEP].forEach(
+        (
+          offsetY,
+          lane
+        ) => {
+          const frame =
+            STONE_FLOOR_FRAMES[
+              (
+                index +
+                lane * 3
+              ) %
+                STONE_FLOOR_FRAMES.length
+            ];
+
+          this.paintGroundTile(
+            x,
+            centerY +
+              offsetY,
+            frame,
+            -28,
+            1
+          );
+        }
+      );
+
+      index += 1;
+    }
+  }
+
+  paintSecondaryStonePath() {
+    let index = 0;
+
+    for (
+      let y = 145;
+      y <=
+        WORLD_HEIGHT - 120;
+      y += GROUND_STEP
+    ) {
+      const centerX =
+        ARENA_X +
+        ARENA_WIDTH / 2 +
+        Math.sin(
+          y / 105
+        ) *
+          38;
+
+      [-GROUND_STEP, 0].forEach(
+        (
+          offsetX,
+          lane
+        ) => {
+          const frame =
+            STONE_FLOOR_FRAMES[
+              (
+                index * 2 +
+                lane
+              ) %
+                STONE_FLOOR_FRAMES.length
+            ];
+
+          this.paintGroundTile(
+            centerX +
+              offsetX,
+            y,
+            frame,
+            -28,
+            0.95
+          );
+        }
+      );
+
+      index += 1;
+    }
   }
 
   createUndeadDecor() {
