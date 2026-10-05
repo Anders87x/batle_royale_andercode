@@ -166,50 +166,30 @@ export class ArenaEnvironment {
   }
 
   drawGround() {
+    // El TMX original usa mayormente el GID 55 para el suelo.
+    // Como el firstgid del tileset es 1, corresponde al frame 54.
+    this.scene.add
+      .tileSprite(
+        ARENA_X,
+        0,
+        ARENA_WIDTH,
+        WORLD_HEIGHT,
+        "undead-ground-rocks",
+        54
+      )
+      .setOrigin(0, 0)
+      .setDepth(-30);
+
+    // Variación visual encima del tile real para evitar que se vea
+    // demasiado uniforme sin tapar el pixel art del suelo.
     const graphics =
       this.scene.add
         .graphics()
-        .setDepth(-30);
+        .setDepth(-29);
 
     graphics.fillStyle(
-      0x4d5147,
-      1
-    );
-
-    graphics.fillRect(
-      ARENA_X,
-      0,
-      ARENA_WIDTH,
-      WORLD_HEIGHT
-    );
-
-    graphics.fillStyle(
-      0x5b5d50,
-      0.9
-    );
-
-    const patches = [
-      [1780, 250, 250, 150],
-      [2080, 650, 300, 135],
-      [2410, 120, 320, 145],
-      [2700, 610, 240, 150],
-      [2250, 380, 180, 150],
-    ];
-
-    patches.forEach(
-      ([x, y, width, height]) => {
-        graphics.fillEllipse(
-          x,
-          y,
-          width,
-          height
-        );
-      }
-    );
-
-    graphics.fillStyle(
-      0x343b35,
-      0.8
+      0x27322c,
+      0.16
     );
 
     const darkPatches = [

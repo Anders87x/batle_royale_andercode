@@ -72,6 +72,15 @@ export class GameScene extends Phaser.Scene {
       "/assets/lobby/interior_objects.png"
     );
 
+    this.load.spritesheet(
+      "undead-ground-rocks",
+      "/assets/arena/undead/ground-rocks.png",
+      {
+        frameWidth: 16,
+        frameHeight: 16,
+      }
+    );
+
     this.load.image(
       "undead-tree",
       "/assets/arena/undead/tree.png"
