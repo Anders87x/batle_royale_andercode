@@ -5,8 +5,6 @@ import {
 } from "../config/game-config.js";
 import { createSwordsmanAnimations } from "../animations/swordsmanAnimations.js";
 import { Player } from "../entities/Player.js";
-import { TrainingDummy } from "../entities/TrainingDummy.js";
-import { TrainingEnemy } from "../entities/TrainingEnemy.js";
 import { CombatSystem } from "../systems/CombatSystem.js";
 import { CombatEffectSystem } from "../systems/CombatEffectSystem.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
@@ -108,32 +106,6 @@ export class GameScene extends Phaser.Scene {
       );
     }
 
-    this.load.spritesheet(
-      "mannequin-1",
-      "/assets/lobby/mannequin_1.png",
-      {
-        frameWidth: 32,
-        frameHeight: 32,
-      }
-    );
-
-    this.load.spritesheet(
-      "mannequin-2",
-      "/assets/lobby/mannequin_2.png",
-      {
-        frameWidth: 32,
-        frameHeight: 32,
-      }
-    );
-
-    this.load.spritesheet(
-      "mannequin-3",
-      "/assets/lobby/mannequin_3.png",
-      {
-        frameWidth: 32,
-        frameHeight: 32,
-      }
-    );
   }
 
   create() {
@@ -155,32 +127,7 @@ export class GameScene extends Phaser.Scene {
       650
     );
 
-    this.trainingEnemy = new TrainingEnemy(
-      this,
-      {
-        x: 1175,
-        y: 650,
-        textureKey: "mannequin-3",
-        name: "Dummy C",
-      },
-      this.player
-    );
-
-    this.trainingDummies = [
-      new TrainingDummy(this, {
-        x: 995,
-        y: 650,
-        textureKey: "mannequin-1",
-        name: "Dummy A",
-      }),
-      new TrainingDummy(this, {
-        x: 1085,
-        y: 650,
-        textureKey: "mannequin-2",
-        name: "Dummy B",
-      }),
-      this.trainingEnemy,
-    ];
+    this.combatTargets = [];
 
     const environmentBlockers = [
       ...this.lobby.getBlockers(),
@@ -190,7 +137,7 @@ export class GameScene extends Phaser.Scene {
     this.collisionSystem = new CollisionSystem(
       this,
       this.player,
-      this.trainingDummies,
+      this.combatTargets,
       environmentBlockers
     );
 
@@ -202,7 +149,7 @@ export class GameScene extends Phaser.Scene {
     this.combatSystem = new CombatSystem(
       this,
       this.player,
-      this.trainingDummies,
+      this.combatTargets,
       this.combatEffectSystem
     );
 
@@ -274,10 +221,7 @@ export class GameScene extends Phaser.Scene {
     const phase =
       this.networkSystem?.getPhase?.() || "lobby";
 
-    return (
-      phase === "lobby" ||
-      phase === "playing"
-    );
+    return phase === "playing";
   }
 
   handlePlayerDeath() {
@@ -328,17 +272,6 @@ export class GameScene extends Phaser.Scene {
 
   update() {
     this.player.update();
-
-    const phase =
-      this.networkSystem.getPhase();
-
-    this.trainingEnemy.setEnabled(
-      phase === "lobby"
-    );
-
-    this.trainingDummies.forEach((target) => {
-      target.update?.();
-    });
 
     this.combatSystem.update();
     this.networkSystem.update();
