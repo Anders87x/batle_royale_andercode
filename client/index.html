@@ -452,27 +452,190 @@
   </div>
 
   <main id="game-page" class="game-page is-hidden">
-    <section class="game-header">
-      <div>
-        <p class="eyebrow">AnderCode Battle Royale</p>
-        <h1>Lobby del gremio</h1>
-        <p>Lobby de espera, arena PvP y zona segura dinámica.</p>
+    <header class="game-commandbar">
+      <div class="game-brand">
+        <span class="brand-mark">AC</span>
+        <div>
+          <strong>ANDERCODE BATTLE ROYALE</strong>
+          <small>TIERRAS DE LOS NO MUERTOS</small>
+        </div>
       </div>
 
-      <span class="game-build">ALPHA</span>
+      <div class="game-session">
+        <span class="session-dot"></span>
+        <div>
+          <small>JUGADOR</small>
+          <strong id="game-player-name">Jugador</strong>
+        </div>
+      </div>
+
+      <div class="game-actions">
+        <button id="game-help-button" class="game-action-button" type="button">
+          <span>⌨</span>
+          <span>Controles</span>
+        </button>
+
+        <button id="game-fullscreen-button" class="game-action-button" type="button">
+          <span>⛶</span>
+          <span>Pantalla completa</span>
+        </button>
+
+        <button id="game-exit-button" class="game-action-button game-action-danger" type="button">
+          <span>↩</span>
+          <span>Salir</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="game-stage">
+      <div class="game-stage-head">
+        <div class="game-stage-title">
+          <span class="game-live-dot"></span>
+          <div>
+            <small>SESIÓN MULTIJUGADOR</small>
+            <strong>Battle Arena</strong>
+          </div>
+        </div>
+
+        <div class="game-stage-tags">
+          <span>PvP</span>
+          <span>Zona dinámica</span>
+          <span class="game-stage-alpha">ALPHA</span>
+        </div>
+      </div>
+
+      <section id="game-shell" class="game-shell">
+        <div id="game-loading" class="game-loading">
+          <div class="game-loader-ring"></div>
+          <strong>Preparando la arena...</strong>
+          <span>Sincronizando jugadores y recursos</span>
+        </div>
+
+        <div id="game"></div>
+
+        <div class="game-corner game-corner-tl"></div>
+        <div class="game-corner game-corner-tr"></div>
+        <div class="game-corner game-corner-bl"></div>
+        <div class="game-corner game-corner-br"></div>
+      </section>
     </section>
 
-    <section class="game-shell">
-      <div id="game"></div>
+    <section class="game-control-deck" aria-label="Controles rápidos">
+      <div class="control-group">
+        <span class="control-label">MOVIMIENTO</span>
+        <div class="key-cluster">
+          <kbd>W</kbd>
+          <kbd>A</kbd>
+          <kbd>S</kbd>
+          <kbd>D</kbd>
+        </div>
+      </div>
+
+      <div class="control-divider"></div>
+
+      <div class="control-skill">
+        <img src="/assets/ui/abilities/attack1.png" alt="">
+        <div>
+          <span>Ataque</span>
+          <strong>LMB / SPACE</strong>
+        </div>
+      </div>
+
+      <div class="control-skill">
+        <img src="/assets/ui/abilities/attack2.png" alt="">
+        <div>
+          <span>Embestida</span>
+          <strong>Q</strong>
+        </div>
+      </div>
+
+      <div class="control-skill">
+        <img src="/assets/ui/abilities/attack3.png" alt="">
+        <div>
+          <span>Giro 360°</span>
+          <strong>E</strong>
+        </div>
+      </div>
+
+      <div class="control-divider"></div>
+
+      <div class="control-ready">
+        <kbd>R</kbd>
+        <div>
+          <span>EN EL LOBBY</span>
+          <strong>Marcar LISTO</strong>
+        </div>
+      </div>
     </section>
 
-    <p class="controls">
-      Movimiento: <strong>W A S D</strong>
-      · Ataque: <strong>CLICK IZQ. / SPACE</strong>
-      · Habilidades: <strong>Q / E</strong>
-      · Lobby: <strong>R = LISTO</strong>
-    </p>
+    <div class="game-tip">
+      <span>◉</span>
+      <p>
+        <strong>Consejo:</strong>
+        guarda tu embestida para entrar, escapar de la zona o cerrar distancia con un rival.
+      </p>
+    </div>
+
+    <footer class="game-footer">
+      <span>AnderCode Battle Royale · Build Alpha</span>
+      <a
+        href="https://anderson-bastidas.com/"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        anderson-bastidas.com
+      </a>
+    </footer>
   </main>
+
+  <aside id="game-help-panel" class="game-help-panel" aria-hidden="true">
+    <button id="game-help-close" class="game-help-close" type="button" aria-label="Cerrar">
+      ×
+    </button>
+
+    <p class="kicker">GUÍA RÁPIDA</p>
+    <h2>Domina la arena</h2>
+    <p class="game-help-copy">
+      Todo lo que necesitas para entrar a una partida y sobrevivir.
+    </p>
+
+    <div class="help-control-list">
+      <div>
+        <span class="help-key">WASD</span>
+        <p><strong>Moverse</strong><small>Recorre la arena y busca cobertura.</small></p>
+      </div>
+      <div>
+        <span class="help-key">R</span>
+        <p><strong>Listo</strong><small>Úsalo en el lobby para iniciar la partida.</small></p>
+      </div>
+      <div>
+        <span class="help-key">LMB</span>
+        <p><strong>Ataque normal</strong><small>También puedes utilizar SPACE.</small></p>
+      </div>
+      <div>
+        <span class="help-key">Q</span>
+        <p><strong>Embestida</strong><small>Movimiento ofensivo y reposicionamiento.</small></p>
+      </div>
+      <div>
+        <span class="help-key">E</span>
+        <p><strong>Giro 360°</strong><small>Daño alrededor de tu personaje.</small></p>
+      </div>
+      <div>
+        <span class="help-key">TAB</span>
+        <p><strong>Espectador</strong><small>Cambia de jugador después de ser eliminado.</small></p>
+      </div>
+    </div>
+
+    <div class="help-zone-card">
+      <span>◉</span>
+      <div>
+        <strong>No pierdas de vista la zona</strong>
+        <small>El daño aumenta a medida que avanza la partida.</small>
+      </div>
+    </div>
+  </aside>
+
+  <div id="game-help-backdrop" class="game-help-backdrop is-hidden"></div>
 
   <script src="https://cdn.jsdelivr.net/gh/phaserjs/phaser@v4.2.1/dist/phaser.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
