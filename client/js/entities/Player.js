@@ -34,6 +34,9 @@ export class Player {
       right: Phaser.Input.Keyboard.KeyCodes.D,
     });
 
+    this.cursorKeys =
+      scene.input.keyboard.createCursorKeys();
+
     this.attackKey = scene.input.keyboard.addKey(
       Phaser.Input.Keyboard.KeyCodes.SPACE
     );
@@ -48,13 +51,25 @@ export class Player {
   }
 
   syncFacingFromInput() {
-    if (this.movementKeys.up.isDown) {
+    if (
+      this.movementKeys.up.isDown ||
+      this.cursorKeys.up.isDown
+    ) {
       this.facing = "up";
-    } else if (this.movementKeys.down.isDown) {
+    } else if (
+      this.movementKeys.down.isDown ||
+      this.cursorKeys.down.isDown
+    ) {
       this.facing = "down";
-    } else if (this.movementKeys.left.isDown) {
+    } else if (
+      this.movementKeys.left.isDown ||
+      this.cursorKeys.left.isDown
+    ) {
       this.facing = "left";
-    } else if (this.movementKeys.right.isDown) {
+    } else if (
+      this.movementKeys.right.isDown ||
+      this.cursorKeys.right.isDown
+    ) {
       this.facing = "right";
     }
   }
@@ -290,19 +305,31 @@ export class Player {
     let moveX = 0;
     let moveY = 0;
 
-    if (this.movementKeys.left.isDown) {
+    if (
+      this.movementKeys.left.isDown ||
+      this.cursorKeys.left.isDown
+    ) {
       moveX -= 1;
     }
 
-    if (this.movementKeys.right.isDown) {
+    if (
+      this.movementKeys.right.isDown ||
+      this.cursorKeys.right.isDown
+    ) {
       moveX += 1;
     }
 
-    if (this.movementKeys.up.isDown) {
+    if (
+      this.movementKeys.up.isDown ||
+      this.cursorKeys.up.isDown
+    ) {
       moveY -= 1;
     }
 
-    if (this.movementKeys.down.isDown) {
+    if (
+      this.movementKeys.down.isDown ||
+      this.cursorKeys.down.isDown
+    ) {
       moveY += 1;
     }
 

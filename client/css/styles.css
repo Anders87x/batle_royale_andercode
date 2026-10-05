@@ -2733,3 +2733,25 @@ kbd {
     animation: none;
   }
 }
+
+
+/* Soporte visual para movimiento alternativo con flechas */
+.key-alternative {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  color: #5f7187;
+  font-size: 0.6rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.help-control-list > div:first-child {
+  grid-template-columns: 92px 1fr;
+}
+
+.help-control-list > div:first-child .help-key {
+  padding-inline: 6px;
+  font-size: 0.57rem;
+  white-space: nowrap;
+}
