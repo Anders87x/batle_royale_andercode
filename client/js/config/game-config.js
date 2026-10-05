@@ -8,6 +8,7 @@ export const WORLD_HEIGHT = 900;
 
 export const FRAME_SIZE = 64;
 export const PLAYER_SPEED = 180;
+export const SHOW_HITBOX_DEBUG = false;
 
 export const ABILITIES = {
   attack1: {

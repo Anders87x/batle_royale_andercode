@@ -7,6 +7,7 @@ import { createSwordsmanAnimations } from "../animations/swordsmanAnimations.js"
 import { Player } from "../entities/Player.js";
 import { TrainingDummy } from "../entities/TrainingDummy.js";
 import { CombatSystem } from "../systems/CombatSystem.js";
+import { CombatEffectSystem } from "../systems/CombatEffectSystem.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
 import { AbilityHud } from "../ui/AbilityHud.js";
 import { LobbyEnvironment } from "../world/LobbyEnvironment.js";
@@ -68,6 +69,25 @@ export class GameScene extends Phaser.Scene {
       "lobby-interior",
       "/assets/lobby/interior_objects.png"
     );
+
+    for (let i = 1; i <= 8; i += 1) {
+      this.load.image(
+        `fx-attack1-${i}`,
+        `/assets/effects/attack1/${i}.png`
+      );
+
+      this.load.image(
+        `fx-attack2-${i}`,
+        `/assets/effects/attack2/${i}.png`
+      );
+    }
+
+    for (let i = 1; i <= 10; i += 1) {
+      this.load.image(
+        `fx-attack3-${i}`,
+        `/assets/effects/attack3/${i}.png`
+      );
+    }
 
     this.load.spritesheet(
       "mannequin-1",
@@ -143,10 +163,16 @@ export class GameScene extends Phaser.Scene {
       this.lobby.getBlockers()
     );
 
+    this.combatEffectSystem = new CombatEffectSystem(
+      this,
+      this.player
+    );
+
     this.combatSystem = new CombatSystem(
       this,
       this.player,
-      this.trainingDummies
+      this.trainingDummies,
+      this.combatEffectSystem
     );
 
     this.abilityHud = new AbilityHud(

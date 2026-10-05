@@ -1,12 +1,16 @@
-import { ABILITIES } from "../config/game-config.js";
+import {
+  ABILITIES,
+  SHOW_HITBOX_DEBUG,
+} from "../config/game-config.js";
 
 const Phaser = window.Phaser;
 
 export class CombatSystem {
-  constructor(scene, player, targets = []) {
+  constructor(scene, player, targets = [], effects = null) {
     this.scene = scene;
     this.player = player;
     this.targets = targets;
+    this.effects = effects;
 
     this.cooldownEnds = {
       attack1: 0,
@@ -27,6 +31,7 @@ export class CombatSystem {
     }
 
     this.startCooldown("attack1");
+    this.effects?.playAttack1();
 
     this.scene.time.delayedCall(
       ABILITIES.attack1.impactDelay,
@@ -63,6 +68,8 @@ export class CombatSystem {
     const direction = this.player.getFacingVector();
     const startX = this.player.sprite.x;
     const startY = this.player.sprite.y;
+
+    this.effects?.playDashAttack();
 
     this.player.setForcedVelocity(
       direction.x * ABILITIES.attack2.dashSpeed,
@@ -109,6 +116,7 @@ export class CombatSystem {
     }
 
     this.startCooldown("attack3");
+    this.effects?.playSpinAttack();
 
     this.scene.tweens.add({
       targets: this.player.sprite,
@@ -169,7 +177,9 @@ export class CombatSystem {
   }
 
   applyRectangleHit(hitbox, damage, color) {
-    this.showRectangleDebug(hitbox, color);
+    if (SHOW_HITBOX_DEBUG) {
+      this.showRectangleDebug(hitbox, color);
+    }
 
     this.targets.forEach((target) => {
       if (!target.alive) {
@@ -188,7 +198,9 @@ export class CombatSystem {
   }
 
   applyCircleHit(hitbox, damage) {
-    this.showCircleDebug(hitbox);
+    if (SHOW_HITBOX_DEBUG) {
+      this.showCircleDebug(hitbox);
+    }
 
     this.targets.forEach((target) => {
       if (!target.alive) {
