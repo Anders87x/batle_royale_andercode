@@ -81,6 +81,24 @@ export class GameScene extends Phaser.Scene {
       }
     );
 
+    this.load.spritesheet(
+      "undead-water-coasts",
+      "/assets/arena/undead/water-coasts.png",
+      {
+        frameWidth: 16,
+        frameHeight: 16,
+      }
+    );
+
+    this.load.spritesheet(
+      "undead-water-details",
+      "/assets/arena/undead/water-details.png",
+      {
+        frameWidth: 16,
+        frameHeight: 16,
+      }
+    );
+
     this.load.image(
       "undead-tree",
       "/assets/arena/undead/tree.png"

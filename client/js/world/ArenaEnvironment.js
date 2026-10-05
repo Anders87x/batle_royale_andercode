@@ -21,6 +21,34 @@ const DARK_FLOOR_FRAMES = [
 const GROUND_SCALE = 2;
 const GROUND_STEP = 16 * GROUND_SCALE;
 
+const WATER_SCALE = 2;
+const TERRAIN_STEP = 16 * WATER_SCALE;
+
+// Bloque de costa cuadrado tomado de la primera fase del tileset
+// water_coasts. El hueco central deja ver el agua verde.
+const WATER_COAST_BLOCK = [
+  [5, 6, 7, 8],
+  [28, 29, 30, 31],
+  [51, 52, 53, 54],
+  [74, 75, 76, 77],
+];
+
+// Pequeño promontorio/precipicio armado con frames contiguos
+// del Ground_rocks original.
+const CLIFF_BLOCK = [
+  [1, 2, 3, 4],
+  [27, 28, 29, 30],
+  [53, 54, 55, 56],
+  [79, 80, 81, 82],
+  [105, 106, 107, 108],
+];
+
+const WATER_DETAIL_FRAMES = [
+  56, 57, 58, 59, 60,
+  61, 62, 63, 93, 94,
+];
+
+
 const OBSTACLES = [
   {
     key: "undead-tree",
@@ -178,6 +206,7 @@ export class ArenaEnvironment {
     this.blockers = [];
 
     this.drawGround();
+    this.createTerrainFeatures();
     this.createUndeadDecor();
     this.createBounds();
   }
@@ -453,6 +482,169 @@ export class ArenaEnvironment {
 
       index += 1;
     }
+  }
+
+  createTerrainFeatures() {
+    // Dos lagunas tóxicas con borde real del tileset.
+    this.createToxicPool(
+      2070,
+      255
+    );
+
+    this.createToxicPool(
+      2660,
+      690
+    );
+
+    // Precipicios laterales para dar más verticalidad visual
+    // y generar coberturas/embudos de paso.
+    this.createCliffFeature(
+      1715,
+      455
+    );
+
+    this.createCliffFeature(
+      2925,
+      455
+    );
+  }
+
+  createToxicPool(
+    centerX,
+    centerY
+  ) {
+    // El TMX usa el GID 8057 para la capa de agua.
+    // firstgid=8035 => frame 22.
+    this.scene.add
+      .tileSprite(
+        centerX,
+        centerY,
+        72,
+        72,
+        "undead-water-coasts",
+        22
+      )
+      .setOrigin(0.5)
+      .setDepth(-27);
+
+    const startX =
+      centerX -
+      ((WATER_COAST_BLOCK[0].length - 1) *
+        TERRAIN_STEP) /
+        2;
+
+    const startY =
+      centerY -
+      ((WATER_COAST_BLOCK.length - 1) *
+        TERRAIN_STEP) /
+        2;
+
+    WATER_COAST_BLOCK.forEach(
+      (row, rowIndex) => {
+        row.forEach(
+          (frame, columnIndex) => {
+            this.scene.add
+              .image(
+                startX +
+                  columnIndex *
+                    TERRAIN_STEP,
+                startY +
+                  rowIndex *
+                    TERRAIN_STEP,
+                "undead-water-coasts",
+                frame
+              )
+              .setScale(
+                WATER_SCALE
+              )
+              .setDepth(-25);
+          }
+        );
+      }
+    );
+
+    // Reflejos verdes reales del pack para que el agua
+    // no se vea como un color plano.
+    [
+      [-18, -8, 56],
+      [16, 12, 60],
+      [2, -24, 93],
+    ].forEach(
+      ([offsetX, offsetY, frame]) => {
+        this.scene.add
+          .image(
+            centerX + offsetX,
+            centerY + offsetY,
+            "undead-water-details",
+            frame
+          )
+          .setScale(1.35)
+          .setAlpha(0.85)
+          .setDepth(-24);
+      }
+    );
+
+    // El centro de la laguna es terreno no transitable.
+    this.addBlocker(
+      centerX,
+      centerY,
+      62,
+      62
+    );
+  }
+
+  createCliffFeature(
+    centerX,
+    centerY
+  ) {
+    const rows =
+      CLIFF_BLOCK.length;
+
+    const columns =
+      CLIFF_BLOCK[0].length;
+
+    const startX =
+      centerX -
+      ((columns - 1) *
+        TERRAIN_STEP) /
+        2;
+
+    const startY =
+      centerY -
+      ((rows - 1) *
+        TERRAIN_STEP) /
+        2;
+
+    CLIFF_BLOCK.forEach(
+      (row, rowIndex) => {
+        row.forEach(
+          (frame, columnIndex) => {
+            this.scene.add
+              .image(
+                startX +
+                  columnIndex *
+                    TERRAIN_STEP,
+                startY +
+                  rowIndex *
+                    TERRAIN_STEP,
+                "undead-ground-rocks",
+                frame
+              )
+              .setScale(
+                GROUND_SCALE
+              )
+              .setDepth(-26);
+          }
+        );
+      }
+    );
+
+    this.addBlocker(
+      centerX,
+      centerY + 8,
+      90,
+      108
+    );
   }
 
   createUndeadDecor() {
