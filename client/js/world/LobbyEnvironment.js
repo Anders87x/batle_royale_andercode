@@ -10,7 +10,7 @@ export class LobbyEnvironment {
 
     this.createAtlasFrames();
     this.drawRoom();
-    this.createReferenceLayout();
+    this.createDragonCenterpiece();
     this.createWaitingArea();
     this.createTrainingArea();
   }
@@ -18,24 +18,11 @@ export class LobbyEnvironment {
   createAtlasFrames() {
     const interior = this.scene.textures.get("lobby-interior");
 
-    // Recortes tomados del atlas Interior_objects.png (384x384).
-    // El dragón se divide en cuerpo y cola para no incluir las escaleras
-    // que comparten espacio con él dentro del atlas.
-    interior.add("dragon-body", 0, 176, 0, 144, 96);
-    interior.add("dragon-tail", 0, 320, 64, 64, 32);
-
-    interior.add("notice-board-left", 0, 64, 192, 64, 64);
-    interior.add("notice-board-right", 0, 192, 192, 64, 64);
-
-    interior.add("guild-desk", 0, 192, 256, 96, 64);
-    interior.add("guild-rug", 0, 0, 208, 80, 80);
-
-    interior.add("guild-banner", 0, 224, 320, 32, 64);
-    interior.add("plant-left", 0, 256, 320, 32, 64);
-    interior.add("plant-right", 0, 288, 320, 32, 64);
-
-    interior.add("bookshelf-left", 0, 256, 96, 64, 96);
-    interior.add("bookshelf-right", 0, 320, 96, 64, 96);
+    // Dragón del atlas Interior_objects.png.
+    // Lo dividimos en dos piezas para excluir las escaleras
+    // y otros sprites que comparten el mismo sector del atlas.
+    interior.add("dragon-main", 0, 192, 0, 144, 96);
+    interior.add("dragon-tail", 0, 304, 48, 80, 48);
   }
 
   drawRoom() {
@@ -61,7 +48,7 @@ export class LobbyEnvironment {
       }
     }
 
-    // Pared superior limpia.
+    // Pared superior limpia, sin decoración.
     graphics.fillStyle(0xd9b37c, 1);
     graphics.fillRect(0, 0, WORLD_WIDTH, 184);
 
@@ -77,6 +64,7 @@ export class LobbyEnvironment {
     graphics.fillRect(WORLD_WIDTH - 40, 0, 40, WORLD_HEIGHT);
     graphics.fillRect(0, WORLD_HEIGHT - 32, WORLD_WIDTH, 32);
 
+    // Colisiones del perímetro.
     this.addBlocker(WORLD_WIDTH / 2, 88, WORLD_WIDTH, 176);
     this.addBlocker(20, WORLD_HEIGHT / 2, 40, WORLD_HEIGHT);
     this.addBlocker(WORLD_WIDTH - 20, WORLD_HEIGHT / 2, 40, WORLD_HEIGHT);
@@ -88,135 +76,79 @@ export class LobbyEnvironment {
     );
   }
 
-  createReferenceLayout() {
+  createDragonCenterpiece() {
     const centerX = WORLD_WIDTH / 2;
+    const centerY = 330;
 
-    // Tableros laterales.
-    this.addDecoration(
-      170,
-      72,
-      "notice-board-left",
-      2,
-      1
+    // Base sobria para destacar al dragón sin llenar el escenario.
+    const platform = this.scene.add.graphics().setDepth(-4);
+
+    platform.fillStyle(0x5b3d38, 0.9);
+    platform.fillRoundedRect(
+      centerX - 260,
+      centerY - 115,
+      520,
+      230,
+      28
     );
 
-    this.addDecoration(
-      WORLD_WIDTH - 298,
-      72,
-      "notice-board-right",
-      2,
-      1
+    platform.lineStyle(4, 0x3d2927, 0.95);
+    platform.strokeRoundedRect(
+      centerX - 260,
+      centerY - 115,
+      520,
+      230,
+      28
     );
 
-    // Banner central.
-    this.addDecoration(
-      centerX - 32,
-      30,
-      "guild-banner",
-      2,
-      2
-    );
+    platform.fillStyle(0x6d4a45, 0.45);
+    platform.fillEllipse(centerX, centerY + 8, 430, 135);
 
-    // Plantas a ambos lados del banner.
-    this.addDecoration(
-      centerX - 170,
-      44,
-      "plant-left",
-      2,
-      2
-    );
-
-    this.addDecoration(
-      centerX + 106,
-      44,
-      "plant-right",
-      2,
-      2
-    );
-
-    // Alfombra y escritorio como en la referencia.
-    this.addDecoration(
-      centerX - 80,
-      184,
-      "guild-rug",
-      2,
-      -2
-    );
-
-    this.addDecoration(
-      centerX - 96,
-      176,
-      "guild-desk",
-      2,
-      3
-    );
-
-    // Dragón construido en dos piezas.
-    const dragonX = centerX - 235;
-    const dragonY = 172;
-
-    this.addDecoration(
-      dragonX,
-      dragonY,
-      "dragon-body",
-      2,
-      1
-    );
-
-    this.addDecoration(
-      dragonX + 288,
-      dragonY + 128,
-      "dragon-tail",
-      2,
-      1
-    );
-
-    // Libreros discretos en los extremos.
-    this.addDecoration(
-      44,
-      70,
-      "bookshelf-left",
-      1,
-      1
-    );
-
-    this.addDecoration(
-      WORLD_WIDTH - 108,
-      70,
-      "bookshelf-right",
-      1,
-      1
-    );
-
-    // Evita atravesar el escritorio y el dragón.
-    this.addBlocker(centerX, 268, 520, 205);
-  }
-
-  addDecoration(x, y, frame, scale = 1, depth = 0) {
-    return this.scene.add
-      .image(x, y, "lobby-interior", frame)
+    // Cuerpo principal.
+    this.scene.add
+      .image(
+        centerX - 210,
+        centerY - 108,
+        "lobby-interior",
+        "dragon-main"
+      )
       .setOrigin(0, 0)
-      .setScale(scale)
-      .setDepth(depth);
+      .setScale(2)
+      .setDepth(1);
+
+    // Cola.
+    this.scene.add
+      .image(
+        centerX + 78,
+        centerY - 12,
+        "lobby-interior",
+        "dragon-tail"
+      )
+      .setOrigin(0, 0)
+      .setScale(2)
+      .setDepth(1);
+
+    // Zona física del dragón.
+    this.addBlocker(centerX, centerY + 5, 500, 190);
   }
 
   createWaitingArea() {
-    const centerX = 505;
-    const centerY = 660;
+    const centerX = 470;
+    const centerY = 675;
 
     const floor = this.scene.add.graphics().setDepth(-6);
 
     floor.fillStyle(0x65445f, 0.22);
-    floor.fillCircle(centerX, centerY, 140);
+    floor.fillCircle(centerX, centerY, 135);
 
     floor.lineStyle(4, 0xe7b34a, 0.7);
-    floor.strokeCircle(centerX, centerY, 140);
+    floor.strokeCircle(centerX, centerY, 135);
 
     floor.lineStyle(2, 0xf3d28a, 0.35);
-    floor.strokeCircle(centerX, centerY, 112);
+    floor.strokeCircle(centerX, centerY, 108);
 
     this.scene.add
-      .text(centerX, centerY - 174, "ZONA DE ESPERA", {
+      .text(centerX, centerY - 168, "ZONA DE ESPERA", {
         fontFamily: "Arial",
         fontSize: "20px",
         fontStyle: "bold",
@@ -233,14 +165,20 @@ export class LobbyEnvironment {
 
   createTrainingArea() {
     const x = 1085;
-    const y = 645;
+    const y = 660;
     const width = 320;
-    const height = 250;
+    const height = 245;
 
     const area = this.scene.add.graphics().setDepth(-5);
 
     area.fillStyle(0x243447, 0.15);
-    area.fillRoundedRect(x - width / 2, y - height / 2, width, height, 22);
+    area.fillRoundedRect(
+      x - width / 2,
+      y - height / 2,
+      width,
+      height,
+      22
+    );
 
     area.lineStyle(3, 0x7897b7, 0.65);
     area.strokeRoundedRect(
