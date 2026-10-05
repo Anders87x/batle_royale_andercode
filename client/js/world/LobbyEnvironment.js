@@ -10,7 +10,7 @@ export class LobbyEnvironment {
 
     this.createAtlasFrames();
     this.drawRoom();
-    this.createDragonCenterpiece();
+    this.createFurniture();
     this.createWaitingArea();
     this.createTrainingArea();
   }
@@ -18,11 +18,21 @@ export class LobbyEnvironment {
   createAtlasFrames() {
     const interior = this.scene.textures.get("lobby-interior");
 
-    // Dragón del atlas Interior_objects.png.
-    // Lo dividimos en dos piezas para excluir las escaleras
-    // y otros sprites que comparten el mismo sector del atlas.
-    interior.add("dragon-main", 0, 192, 0, 144, 96);
-    interior.add("dragon-tail", 0, 304, 48, 80, 48);
+    // Objetos rectangulares y fáciles de aislar del atlas Interior_objects.png.
+    interior.add("bookshelf-a", 0, 192, 96, 48, 64);
+    interior.add("bookshelf-b", 0, 256, 96, 48, 64);
+
+    interior.add("notice-board-a", 0, 48, 160, 48, 64);
+    interior.add("notice-board-b", 0, 96, 160, 48, 64);
+
+    interior.add("desk-a", 0, 192, 224, 64, 32);
+    interior.add("desk-b", 0, 288, 224, 64, 32);
+
+    interior.add("weapon-shelf", 0, 304, 160, 64, 64);
+    interior.add("bench-a", 0, 80, 224, 48, 24);
+    interior.add("bench-b", 0, 128, 224, 48, 24);
+
+    interior.add("rug", 0, 0, 224, 64, 96);
   }
 
   drawRoom() {
@@ -48,7 +58,7 @@ export class LobbyEnvironment {
       }
     }
 
-    // Pared superior limpia, sin decoración.
+    // Pared superior deliberadamente limpia.
     graphics.fillStyle(0xd9b37c, 1);
     graphics.fillRect(0, 0, WORLD_WIDTH, 184);
 
@@ -64,7 +74,7 @@ export class LobbyEnvironment {
     graphics.fillRect(WORLD_WIDTH - 40, 0, 40, WORLD_HEIGHT);
     graphics.fillRect(0, WORLD_HEIGHT - 32, WORLD_WIDTH, 32);
 
-    // Colisiones del perímetro.
+    // Colisiones del perímetro y de la pared.
     this.addBlocker(WORLD_WIDTH / 2, 88, WORLD_WIDTH, 176);
     this.addBlocker(20, WORLD_HEIGHT / 2, 40, WORLD_HEIGHT);
     this.addBlocker(WORLD_WIDTH - 20, WORLD_HEIGHT / 2, 40, WORLD_HEIGHT);
@@ -76,60 +86,105 @@ export class LobbyEnvironment {
     );
   }
 
-  createDragonCenterpiece() {
-    const centerX = WORLD_WIDTH / 2;
-    const centerY = 330;
-
-    // Base sobria para destacar al dragón sin llenar el escenario.
-    const platform = this.scene.add.graphics().setDepth(-4);
-
-    platform.fillStyle(0x5b3d38, 0.9);
-    platform.fillRoundedRect(
-      centerX - 260,
-      centerY - 115,
-      520,
-      230,
-      28
+  createFurniture() {
+    // Libreros sobre la pared.
+    this.addFurniture(
+      90,
+      55,
+      "bookshelf-a",
+      2,
+      1
     );
 
-    platform.lineStyle(4, 0x3d2927, 0.95);
-    platform.strokeRoundedRect(
-      centerX - 260,
-      centerY - 115,
-      520,
-      230,
-      28
+    this.addFurniture(
+      WORLD_WIDTH - 186,
+      55,
+      "bookshelf-b",
+      2,
+      1
     );
 
-    platform.fillStyle(0x6d4a45, 0.45);
-    platform.fillEllipse(centerX, centerY + 8, 430, 135);
+    // Tableros centrales.
+    this.addFurniture(
+      350,
+      55,
+      "notice-board-a",
+      2,
+      1
+    );
 
-    // Cuerpo principal.
-    this.scene.add
-      .image(
-        centerX - 210,
-        centerY - 108,
-        "lobby-interior",
-        "dragon-main"
-      )
+    this.addFurniture(
+      WORLD_WIDTH - 446,
+      55,
+      "notice-board-b",
+      2,
+      1
+    );
+
+    // Estante de armas.
+    this.addFurniture(
+      WORLD_WIDTH - 300,
+      70,
+      "weapon-shelf",
+      1.5,
+      1
+    );
+
+    // Zona de reunión con alfombra y dos escritorios.
+    const meetingX = WORLD_WIDTH / 2;
+
+    this.addFurniture(
+      meetingX - 64,
+      245,
+      "rug",
+      2,
+      -2
+    );
+
+    this.addFurniture(
+      meetingX - 230,
+      260,
+      "desk-a",
+      2,
+      2
+    );
+
+    this.addFurniture(
+      meetingX + 102,
+      260,
+      "desk-b",
+      2,
+      2
+    );
+
+    // Bancos delante de los escritorios.
+    this.addFurniture(
+      meetingX - 195,
+      355,
+      "bench-a",
+      2,
+      1
+    );
+
+    this.addFurniture(
+      meetingX + 115,
+      355,
+      "bench-b",
+      2,
+      1
+    );
+
+    // Los escritorios son objetos físicos.
+    this.addBlocker(meetingX - 166, 292, 128, 55);
+    this.addBlocker(meetingX + 166, 292, 128, 55);
+  }
+
+  addFurniture(x, y, frame, scale = 1, depth = 0) {
+    return this.scene.add
+      .image(x, y, "lobby-interior", frame)
       .setOrigin(0, 0)
-      .setScale(2)
-      .setDepth(1);
-
-    // Cola.
-    this.scene.add
-      .image(
-        centerX + 78,
-        centerY - 12,
-        "lobby-interior",
-        "dragon-tail"
-      )
-      .setOrigin(0, 0)
-      .setScale(2)
-      .setDepth(1);
-
-    // Zona física del dragón.
-    this.addBlocker(centerX, centerY + 5, 500, 190);
+      .setScale(scale)
+      .setDepth(depth);
   }
 
   createWaitingArea() {
