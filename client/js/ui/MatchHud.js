@@ -162,8 +162,29 @@ export class MatchHud {
       return "";
     }
 
-    const now =
-      Date.now();
+    const phaseNumber =
+      Number.isFinite(
+        zone.phaseIndex
+      )
+        ? zone.phaseIndex + 1
+        : 1;
+
+    const totalPhases =
+      zone.totalPhases || 1;
+
+    const phaseLabel =
+      `Zona F${phaseNumber}/${totalPhases}`;
+
+    const damageLabel =
+      `${zone.damage || 0} HP/s`;
+
+    if (zone.phaseComplete) {
+      return (
+        `${phaseLabel} · zona mínima · ${damageLabel}`
+      );
+    }
+
+    const now = Date.now();
 
     if (
       zone.shrinkStartsAt &&
@@ -182,7 +203,9 @@ export class MatchHud {
           )
         );
 
-      return `Zona cierra en ${seconds}s`;
+      return (
+        `${phaseLabel} · cierra en ${seconds}s · ${damageLabel}`
+      );
     }
 
     if (
@@ -202,10 +225,14 @@ export class MatchHud {
           )
         );
 
-      return `Zona cerrando · ${seconds}s`;
+      return (
+        `${phaseLabel} · cerrando ${seconds}s · ${damageLabel}`
+      );
     }
 
-    return "Zona mínima";
+    return (
+      `${phaseLabel} · cambiando fase · ${damageLabel}`
+    );
   }
 
   update() {

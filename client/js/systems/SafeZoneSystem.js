@@ -15,7 +15,7 @@ export class SafeZoneSystem {
         .text(
           480,
           105,
-          "FUERA DE LA ZONA",
+          "",
           {
             fontFamily: "Arial",
             fontSize: "22px",
@@ -166,8 +166,13 @@ export class SafeZoneSystem {
       )
     );
 
-    this.warningText.setVisible(
-      this.isPlayerOutside(radius)
-    );
+    const outside =
+      this.isPlayerOutside(radius);
+
+    this.warningText
+      .setText(
+        `FUERA DE LA ZONA · -${this.zone.damage} HP/s`
+      )
+      .setVisible(outside);
   }
 }

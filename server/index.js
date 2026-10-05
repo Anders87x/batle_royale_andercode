@@ -31,12 +31,30 @@ const ARENA_BOUNDS = {
 const ZONE_CONFIG = {
   centerX: 2320,
   centerY: 450,
-  startRadius: 390,
-  endRadius: 120,
-  waitMs: 10000,
-  shrinkMs: 45000,
-  damage: 5,
   damageIntervalMs: 1000,
+  phases: [
+    {
+      startRadius: 390,
+      endRadius: 300,
+      waitMs: 8000,
+      shrinkMs: 15000,
+      damage: 2,
+    },
+    {
+      startRadius: 300,
+      endRadius: 210,
+      waitMs: 7000,
+      shrinkMs: 14000,
+      damage: 4,
+    },
+    {
+      startRadius: 210,
+      endRadius: 120,
+      waitMs: 5000,
+      shrinkMs: 12000,
+      damage: 7,
+    },
+  ],
 };
 
 const ABILITIES = {
@@ -65,11 +83,18 @@ const match = {
     active: false,
     centerX: ZONE_CONFIG.centerX,
     centerY: ZONE_CONFIG.centerY,
-    startRadius: ZONE_CONFIG.startRadius,
-    endRadius: ZONE_CONFIG.endRadius,
+    phaseIndex: -1,
+    totalPhases:
+      ZONE_CONFIG.phases.length,
+    phaseComplete: false,
+    startRadius:
+      ZONE_CONFIG.phases[0].startRadius,
+    endRadius:
+      ZONE_CONFIG.phases[0].startRadius,
     shrinkStartsAt: null,
     shrinkEndsAt: null,
-    damage: ZONE_CONFIG.damage,
+    damage:
+      ZONE_CONFIG.phases[0].damage,
     damageIntervalMs:
       ZONE_CONFIG.damageIntervalMs,
   },
@@ -77,6 +102,7 @@ const match = {
 
 let countdownTimer = null;
 let returnToLobbyTimer = null;
+let zonePhaseTimer = null;
 let nextZoneDamageAt = 0;
 
 app.get("/", (_req, res) => {
@@ -238,6 +264,30 @@ function getPublicPlayers() {
   ).map(publicPlayer);
 }
 
+function emitKill({
+  killer = null,
+  victim,
+  source,
+  abilityName = null,
+}) {
+  io.emit(
+    "match:kill",
+    {
+      killerId:
+        killer?.id || null,
+      killerName:
+        killer?.name || null,
+      victimId:
+        victim.id,
+      victimName:
+        victim.name,
+      source,
+      abilityName,
+      at: Date.now(),
+    }
+  );
+}
+
 function getMatchState() {
   return {
     phase: match.phase,
@@ -346,21 +396,42 @@ function clearReturnTimer() {
   returnToLobbyTimer = null;
 }
 
+function clearZonePhaseTimer() {
+  if (!zonePhaseTimer) {
+    return;
+  }
+
+  clearTimeout(
+    zonePhaseTimer
+  );
+
+  zonePhaseTimer = null;
+}
+
 function resetZone() {
+  clearZonePhaseTimer();
+
+  const firstPhase =
+    ZONE_CONFIG.phases[0];
+
   match.zone = {
     active: false,
     centerX:
       ZONE_CONFIG.centerX,
     centerY:
       ZONE_CONFIG.centerY,
+    phaseIndex: -1,
+    totalPhases:
+      ZONE_CONFIG.phases.length,
+    phaseComplete: false,
     startRadius:
-      ZONE_CONFIG.startRadius,
+      firstPhase.startRadius,
     endRadius:
-      ZONE_CONFIG.endRadius,
+      firstPhase.startRadius,
     shrinkStartsAt: null,
     shrinkEndsAt: null,
     damage:
-      ZONE_CONFIG.damage,
+      firstPhase.damage,
     damageIntervalMs:
       ZONE_CONFIG.damageIntervalMs,
   };
@@ -368,7 +439,21 @@ function resetZone() {
   nextZoneDamageAt = 0;
 }
 
-function startZone() {
+function startZonePhase(
+  phaseIndex,
+  shouldBroadcast = true
+) {
+  clearZonePhaseTimer();
+
+  const phase =
+    ZONE_CONFIG.phases[
+      phaseIndex
+    ];
+
+  if (!phase) {
+    return;
+  }
+
   const now = Date.now();
 
   match.zone = {
@@ -377,18 +462,22 @@ function startZone() {
       ZONE_CONFIG.centerX,
     centerY:
       ZONE_CONFIG.centerY,
+    phaseIndex,
+    totalPhases:
+      ZONE_CONFIG.phases.length,
+    phaseComplete: false,
     startRadius:
-      ZONE_CONFIG.startRadius,
+      phase.startRadius,
     endRadius:
-      ZONE_CONFIG.endRadius,
+      phase.endRadius,
     shrinkStartsAt:
-      now + ZONE_CONFIG.waitMs,
+      now + phase.waitMs,
     shrinkEndsAt:
       now +
-      ZONE_CONFIG.waitMs +
-      ZONE_CONFIG.shrinkMs,
+      phase.waitMs +
+      phase.shrinkMs,
     damage:
-      ZONE_CONFIG.damage,
+      phase.damage,
     damageIntervalMs:
       ZONE_CONFIG.damageIntervalMs,
   };
@@ -396,6 +485,56 @@ function startZone() {
   nextZoneDamageAt =
     now +
     ZONE_CONFIG.damageIntervalMs;
+
+  if (shouldBroadcast) {
+    broadcastMatchState();
+  }
+
+  zonePhaseTimer =
+    setTimeout(() => {
+      zonePhaseTimer = null;
+
+      if (
+        match.phase !==
+        "playing"
+      ) {
+        return;
+      }
+
+      const nextPhaseIndex =
+        phaseIndex + 1;
+
+      if (
+        nextPhaseIndex <
+        ZONE_CONFIG.phases.length
+      ) {
+        startZonePhase(
+          nextPhaseIndex,
+          true
+        );
+        return;
+      }
+
+      match.zone = {
+        ...match.zone,
+        phaseComplete: true,
+        startRadius:
+          phase.endRadius,
+        endRadius:
+          phase.endRadius,
+        shrinkStartsAt: null,
+        shrinkEndsAt: null,
+      };
+
+      broadcastMatchState();
+    }, phase.waitMs + phase.shrinkMs);
+}
+
+function startZone() {
+  startZonePhase(
+    0,
+    false
+  );
 }
 
 function getZoneRadius(now) {
@@ -583,6 +722,7 @@ function finishMatch(
     Date.now() +
     RETURN_TO_LOBBY_MS;
 
+  clearZonePhaseTimer();
   match.zone.active = false;
 
   broadcastMatchState();
@@ -899,8 +1039,19 @@ setInterval(() => {
           match.zone.damage
       );
 
+      const diedNow =
+        player.hp <= 0 &&
+        !player.isDead;
+
       player.isDead =
         player.hp <= 0;
+
+      if (diedNow) {
+        emitKill({
+          victim: player,
+          source: "zone",
+        });
+      }
 
       damagedSomeone = true;
 
@@ -1375,6 +1526,13 @@ io.on(
 
             if (diedNow) {
               attacker.kills += 1;
+
+              emitKill({
+                killer: attacker,
+                victim: target,
+                source: "player",
+                abilityName,
+              });
             }
 
             hitAnyPlayer =

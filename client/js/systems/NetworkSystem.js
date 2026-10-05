@@ -1,6 +1,8 @@
 import { RemotePlayer } from "../entities/RemotePlayer.js";
 import { MatchHud } from "../ui/MatchHud.js";
 import { SafeZoneSystem } from "./SafeZoneSystem.js";
+import { KillFeed } from "../ui/KillFeed.js";
+import { SpectatorSystem } from "./SpectatorSystem.js";
 
 export class NetworkSystem {
   constructor(scene, player) {
@@ -36,6 +38,16 @@ export class NetworkSystem {
       new SafeZoneSystem(
         scene,
         player
+      );
+
+    this.killFeed =
+      new KillFeed(scene);
+
+    this.spectatorSystem =
+      new SpectatorSystem(
+        scene,
+        player,
+        this
       );
 
     this.configureReadyInput();
@@ -267,6 +279,8 @@ export class NetworkSystem {
           state.phase ===
             "lobby"
         ) {
+          this.killFeed.clear();
+
           this.scene.events.emit(
             "match-returned-to-lobby"
           );
@@ -449,6 +463,15 @@ export class NetworkSystem {
         this.scene.cameras.main.shake(
           55,
           0.0015
+        );
+      }
+    );
+
+    this.socket.on(
+      "match:kill",
+      (payload) => {
+        this.killFeed.add(
+          payload
         );
       }
     );
@@ -706,6 +729,8 @@ export class NetworkSystem {
   }
 
   update() {
+    this.spectatorSystem.update();
+
     this.matchHud.update();
 
     this.safeZoneSystem.update();
