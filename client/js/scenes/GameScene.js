@@ -7,6 +7,7 @@ import { createSwordsmanAnimations } from "../animations/swordsmanAnimations.js"
 import { Player } from "../entities/Player.js";
 import { Enemy } from "../entities/Enemy.js";
 import { CombatSystem } from "../systems/CombatSystem.js";
+import { CollisionSystem } from "../systems/CollisionSystem.js";
 
 const Phaser = window.Phaser;
 
@@ -77,6 +78,12 @@ export class GameScene extends Phaser.Scene {
       GAME_HEIGHT / 2
     );
 
+    this.collisionSystem = new CollisionSystem(
+      this,
+      this.player,
+      this.enemy
+    );
+
     this.combatSystem = new CombatSystem(
       this,
       this.player,
@@ -115,7 +122,7 @@ export class GameScene extends Phaser.Scene {
       .text(
         18,
         52,
-        "Golpea al Swordsman enemigo: Hurt con daño y Death al llegar a 0 HP.",
+        "Colisión activa: ya no puedes atravesar al enemigo. Al morir deja de bloquear.",
         {
           fontFamily: "Arial",
           fontSize: "14px",
@@ -130,8 +137,8 @@ export class GameScene extends Phaser.Scene {
       .setDepth(30);
   }
 
-  update(_time, delta) {
-    this.player.update(delta);
+  update() {
+    this.player.update();
 
     if (this.player.wantsToAttack()) {
       this.combatSystem.startAttack();

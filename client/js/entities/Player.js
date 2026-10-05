@@ -1,8 +1,4 @@
-import {
-  GAME_WIDTH,
-  GAME_HEIGHT,
-  PLAYER_SPEED,
-} from "../config/game-config.js";
+import { PLAYER_SPEED } from "../config/game-config.js";
 
 const Phaser = window.Phaser;
 
@@ -12,9 +8,10 @@ export class Player {
     this.facing = "down";
     this.isAttacking = false;
 
-    this.sprite = scene.add
+    this.sprite = scene.physics.add
       .sprite(x, y, "swordsman-idle", 0)
-      .setScale(2);
+      .setScale(2)
+      .setCollideWorldBounds(true);
 
     this.sprite.play("idle-down");
 
@@ -27,15 +24,6 @@ export class Player {
 
     this.attackKey = scene.input.keyboard.addKey(
       Phaser.Input.Keyboard.KeyCodes.SPACE
-    );
-  }
-
-  hasMovementInput() {
-    return (
-      this.movementKeys.left.isDown ||
-      this.movementKeys.right.isDown ||
-      this.movementKeys.up.isDown ||
-      this.movementKeys.down.isDown
     );
   }
 
@@ -62,6 +50,7 @@ export class Player {
 
     this.syncFacingFromInput();
     this.isAttacking = true;
+    this.stopMovement();
 
     const attackAnimationKey = `attack-${this.facing}`;
     this.sprite.play(attackAnimationKey, true);
@@ -81,8 +70,13 @@ export class Player {
     return true;
   }
 
-  update(delta) {
+  stopMovement() {
+    this.sprite.setVelocity(0, 0);
+  }
+
+  update() {
     if (this.isAttacking) {
+      this.stopMovement();
       return;
     }
 
@@ -108,6 +102,7 @@ export class Player {
     const isMoving = moveX !== 0 || moveY !== 0;
 
     if (!isMoving) {
+      this.stopMovement();
       this.sprite.play(`idle-${this.facing}`, true);
       return;
     }
@@ -118,23 +113,9 @@ export class Player {
     moveX /= magnitude;
     moveY /= magnitude;
 
-    const seconds = delta / 1000;
-
-    this.sprite.x += moveX * PLAYER_SPEED * seconds;
-    this.sprite.y += moveY * PLAYER_SPEED * seconds;
-
-    const margin = 42;
-
-    this.sprite.x = Phaser.Math.Clamp(
-      this.sprite.x,
-      margin,
-      GAME_WIDTH - margin
-    );
-
-    this.sprite.y = Phaser.Math.Clamp(
-      this.sprite.y,
-      margin,
-      GAME_HEIGHT - margin
+    this.sprite.setVelocity(
+      moveX * PLAYER_SPEED,
+      moveY * PLAYER_SPEED
     );
 
     this.sprite.play(`walk-${this.facing}`, true);

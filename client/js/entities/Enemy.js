@@ -8,15 +8,19 @@ const Phaser = window.Phaser;
 export class Enemy {
   constructor(scene, x, y) {
     this.scene = scene;
+    this.spawnX = x;
+    this.spawnY = y;
     this.maxHp = ENEMY_MAX_HP;
     this.hp = ENEMY_MAX_HP;
     this.facing = ENEMY_FACING;
     this.alive = true;
 
-    this.sprite = scene.add
+    this.sprite = scene.physics.add
       .sprite(x, y, "swordsman-idle", 0)
-      .setScale(2);
+      .setScale(2)
+      .setImmovable(true);
 
+    this.sprite.setPushable(false);
     this.sprite.play(`idle-${this.facing}`);
 
     this.label = scene.add
@@ -115,6 +119,9 @@ export class Enemy {
     this.alive = false;
     this.updateHud();
 
+    // El cuerpo muerto deja de bloquear el paso.
+    this.sprite.body.enable = false;
+
     const deathAnimationKey = `death-${this.facing}`;
     this.sprite.play(deathAnimationKey, true);
 
@@ -135,8 +142,13 @@ export class Enemy {
   reset() {
     this.hp = this.maxHp;
     this.alive = true;
+
+    this.sprite.setPosition(this.spawnX, this.spawnY);
+    this.sprite.body.enable = true;
+    this.sprite.setVelocity(0, 0);
     this.sprite.setVisible(true);
     this.sprite.play(`idle-${this.facing}`, true);
+
     this.updateHud();
   }
 
