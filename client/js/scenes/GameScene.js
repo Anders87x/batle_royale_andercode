@@ -1,6 +1,6 @@
 import {
-  GAME_WIDTH,
-  GAME_HEIGHT,
+  WORLD_WIDTH,
+  WORLD_HEIGHT,
   FRAME_SIZE,
 } from "../config/game-config.js";
 import { createSwordsmanAnimations } from "../animations/swordsmanAnimations.js";
@@ -8,6 +8,7 @@ import { Player } from "../entities/Player.js";
 import { Enemy } from "../entities/Enemy.js";
 import { CombatSystem } from "../systems/CombatSystem.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
+import { LobbyEnvironment } from "../world/LobbyEnvironment.js";
 
 const Phaser = window.Phaser;
 
@@ -61,27 +62,96 @@ export class GameScene extends Phaser.Scene {
         frameHeight: FRAME_SIZE,
       }
     );
+
+    this.load.image(
+      "lobby-interior",
+      "/assets/lobby/interior_objects.png"
+    );
+
+    this.load.spritesheet(
+      "guildmaster",
+      "/assets/lobby/guildmaster.png",
+      {
+        frameWidth: 32,
+        frameHeight: 32,
+      }
+    );
+
+    this.load.spritesheet(
+      "lobby-fire",
+      "/assets/lobby/fire.png",
+      {
+        frameWidth: 32,
+        frameHeight: 32,
+      }
+    );
+
+    this.load.spritesheet(
+      "lobby-fighter",
+      "/assets/lobby/fighter_sword.png",
+      {
+        frameWidth: 64,
+        frameHeight: 64,
+      }
+    );
+
+    this.load.spritesheet(
+      "mannequin-1",
+      "/assets/lobby/mannequin_1.png",
+      {
+        frameWidth: 32,
+        frameHeight: 32,
+      }
+    );
+
+    this.load.spritesheet(
+      "mannequin-2",
+      "/assets/lobby/mannequin_2.png",
+      {
+        frameWidth: 32,
+        frameHeight: 32,
+      }
+    );
+
+    this.load.spritesheet(
+      "mannequin-3",
+      "/assets/lobby/mannequin_3.png",
+      {
+        frameWidth: 32,
+        frameHeight: 32,
+      }
+    );
   }
 
   create() {
     createSwordsmanAnimations(this);
 
+    this.physics.world.setBounds(
+      0,
+      0,
+      WORLD_WIDTH,
+      WORLD_HEIGHT
+    );
+
+    this.lobby = new LobbyEnvironment(this);
+
     this.player = new Player(
       this,
-      GAME_WIDTH / 2,
-      GAME_HEIGHT / 2
+      670,
+      650
     );
 
     this.enemy = new Enemy(
       this,
-      GAME_WIDTH / 2 + 125,
-      GAME_HEIGHT / 2
+      1010,
+      625
     );
 
     this.collisionSystem = new CollisionSystem(
       this,
       this.player,
-      this.enemy
+      this.enemy,
+      this.lobby.getBlockers()
     );
 
     this.combatSystem = new CombatSystem(
@@ -96,7 +166,26 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
+    this.configureCamera();
     this.createInstructions();
+  }
+
+  configureCamera() {
+    this.cameras.main.setBounds(
+      0,
+      0,
+      WORLD_WIDTH,
+      WORLD_HEIGHT
+    );
+
+    this.cameras.main.startFollow(
+      this.player.sprite,
+      true,
+      0.1,
+      0.1
+    );
+
+    this.cameras.main.setRoundPixels(true);
   }
 
   createInstructions() {
@@ -104,37 +193,39 @@ export class GameScene extends Phaser.Scene {
       .text(
         18,
         18,
-        "WASD: mover | Click izq. o SPACE: atacar | Ataque 1 = 25 daño",
+        "LOBBY ANDERCODE | WASD: mover | Click izq. o SPACE: atacar",
         {
           fontFamily: "Arial",
           fontSize: "17px",
           color: "#ffffff",
-          backgroundColor: "#00000088",
+          backgroundColor: "#000000aa",
           padding: {
             x: 10,
             y: 6,
           },
         }
       )
-      .setDepth(30);
+      .setScrollFactor(0)
+      .setDepth(100);
 
     this.add
       .text(
         18,
         52,
-        "Colisión activa: ya no puedes atravesar al enemigo. Al morir deja de bloquear.",
+        "Explora el lobby. A la derecha está la zona de entrenamiento.",
         {
           fontFamily: "Arial",
           fontSize: "14px",
-          color: "#cbd5e1",
-          backgroundColor: "#00000066",
+          color: "#d7e2ed",
+          backgroundColor: "#00000088",
           padding: {
             x: 8,
             y: 5,
           },
         }
       )
-      .setDepth(30);
+      .setScrollFactor(0)
+      .setDepth(100);
   }
 
   update() {

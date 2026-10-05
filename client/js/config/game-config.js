@@ -2,6 +2,10 @@ const Phaser = window.Phaser;
 
 export const GAME_WIDTH = 960;
 export const GAME_HEIGHT = 540;
+
+export const WORLD_WIDTH = 1440;
+export const WORLD_HEIGHT = 900;
+
 export const FRAME_SIZE = 64;
 export const PLAYER_SPEED = 180;
 

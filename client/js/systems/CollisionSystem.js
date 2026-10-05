@@ -1,8 +1,9 @@
 export class CollisionSystem {
-  constructor(scene, player, enemy) {
+  constructor(scene, player, enemy, blockers = []) {
     this.scene = scene;
     this.player = player;
     this.enemy = enemy;
+    this.blockers = blockers;
 
     this.configureBodies();
     this.createColliders();
@@ -26,6 +27,13 @@ export class CollisionSystem {
     this.playerEnemyCollider = this.scene.physics.add.collider(
       this.player.sprite,
       this.enemy.sprite
+    );
+
+    this.environmentColliders = this.blockers.map((blocker) =>
+      this.scene.physics.add.collider(
+        this.player.sprite,
+        blocker
+      )
     );
   }
 }
