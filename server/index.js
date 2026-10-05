@@ -1044,7 +1044,7 @@ io.on(
 
     socket.on(
       "players:sync",
-      () => {
+      ({ name } = {}) => {
         const current =
           players.get(
             socket.id
@@ -1052,6 +1052,17 @@ io.on(
 
         if (!current) {
           return;
+        }
+
+        if (
+          typeof name === "string" &&
+          name.trim()
+        ) {
+          current.name =
+            getUniquePlayerName(
+              name,
+              socket.id
+            );
         }
 
         socket.emit(
@@ -1149,6 +1160,35 @@ io.on(
           current.isDead
         ) {
           return;
+        }
+
+        if (
+          typeof state.name === "string" &&
+          state.name.trim()
+        ) {
+          const nextName =
+            getUniquePlayerName(
+              state.name,
+              socket.id
+            );
+
+          if (
+            current.name !==
+            nextName
+          ) {
+            current.name =
+              nextName;
+
+            socket.broadcast.emit(
+              "player:name",
+              {
+                id:
+                  socket.id,
+                name:
+                  current.name,
+              }
+            );
+          }
         }
 
         const bounds =

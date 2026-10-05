@@ -152,7 +152,13 @@ export class NetworkSystem {
         );
 
         this.socket.emit(
-          "players:sync"
+          "players:sync",
+          {
+            name:
+              window.PLAYER_NAME ||
+              this.player.name ||
+              "Jugador",
+          }
         );
       }
     );
@@ -747,6 +753,10 @@ export class NetworkSystem {
     this.socket.emit(
       "player:state",
       {
+        name:
+          window.PLAYER_NAME ||
+          this.player.name ||
+          "Jugador",
         x:
           this.player
             .sprite.x,
