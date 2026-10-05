@@ -68,6 +68,11 @@ export class GameScene extends Phaser.Scene {
       "/assets/lobby/interior_objects.png"
     );
 
+    this.load.image(
+      "lobby-walls",
+      "/assets/lobby/walls_interior.png"
+    );
+
     this.load.spritesheet(
       "mannequin-1",
       "/assets/lobby/mannequin_1.png",
@@ -181,7 +186,7 @@ export class GameScene extends Phaser.Scene {
       .text(
         18,
         18,
-        "LOBBY ANDERCODE | WASD: mover | Click izq. o SPACE: atacar",
+        "LOBBY | WASD: mover | Click izq. o SPACE: atacar",
         {
           fontFamily: "Arial",
           fontSize: "17px",
