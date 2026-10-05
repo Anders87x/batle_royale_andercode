@@ -75,14 +75,14 @@ export class GameScene extends Phaser.Scene {
         `fx-attack1-${i}`,
         `/assets/effects/attack1/${i}.png`
       );
+    }
 
+    for (let i = 1; i <= 10; i += 1) {
       this.load.image(
         `fx-attack2-${i}`,
         `/assets/effects/attack2/${i}.png`
       );
-    }
 
-    for (let i = 1; i <= 10; i += 1) {
       this.load.image(
         `fx-attack3-${i}`,
         `/assets/effects/attack3/${i}.png`

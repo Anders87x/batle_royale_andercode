@@ -25,11 +25,12 @@ const EFFECTS = {
   attack2: {
     animationKey: "fx-attack2",
     texturePrefix: "fx-attack2-",
-    frameCount: 8,
-    frameRate: 32,
-    scale: 0.42,
-    offset: 62,
-    travel: 145,
+    frameCount: 10,
+    frameRate: 36,
+    scale: 0.34,
+    offset: 68,
+    travel: 175,
+    duration: 230,
   },
   attack3: {
     animationKey: "fx-attack3",
@@ -225,7 +226,9 @@ export class CombatEffectSystem {
       targets: sprite,
       x: sprite.x + direction.x * effect.travel,
       y: sprite.y + direction.y * effect.travel,
-      duration: 230,
+      scaleX: effect.scale * 1.08,
+      scaleY: effect.scale * 1.08,
+      duration: effect.duration,
       ease: "Quad.easeOut",
     });
 
