@@ -1,17 +1,26 @@
 const Phaser = window.Phaser;
 
 const EFFECTS = {
-  attack1: {
-    animationKey: "fx-attack1",
+  attack1Primary: {
+    animationKey: "fx-attack1-primary",
     texturePrefix: "fx-attack1-",
     frameCount: 8,
     frameRate: 30,
-    scale: 0.27,
-    startOffset: 44,
-    endOffset: 82,
-    travelDuration: 190,
+    scale: 0.25,
+    startOffset: 42,
+    endOffset: 72,
+    travelDuration: 150,
     originX: 0.58,
     originY: 0.56,
+  },
+  attack1Secondary: {
+    animationKey: "fx-attack1-secondary",
+    texturePrefix: "fx-attack1-secondary-",
+    frameCount: 8,
+    frameRate: 34,
+    scale: 0.20,
+    delay: 95,
+    nearEdgeInset: 18,
   },
   attack2: {
     animationKey: "fx-attack2",
@@ -62,33 +71,14 @@ export class CombatEffectSystem {
   }
 
   playAttack1(hitbox) {
-    const effect = EFFECTS.attack1;
+    this.playAttack1Primary();
+    this.playAttack1Secondary(hitbox);
+  }
+
+  playAttack1Primary() {
+    const effect = EFFECTS.attack1Primary;
     const direction = this.player.getFacingVector();
     const angle = this.getDirectionAngle();
-
-    // Estela suave que coincide exactamente con el alcance real.
-    // No es la hitbox de debug: es feedback visual de gameplay.
-    const rangeGlow = this.scene.add
-      .rectangle(
-        hitbox.centerX,
-        hitbox.centerY,
-        hitbox.width,
-        hitbox.height,
-        0x38bdf8,
-        0.08
-      )
-      .setStrokeStyle(2, 0x7dd3fc, 0.28)
-      .setDepth(31)
-      .setAlpha(0);
-
-    this.scene.tweens.add({
-      targets: rangeGlow,
-      alpha: { from: 0, to: 1 },
-      duration: 55,
-      yoyo: true,
-      hold: 35,
-      onComplete: () => rangeGlow.destroy(),
-    });
 
     const startX =
       this.player.sprite.x + direction.x * effect.startOffset;
@@ -113,23 +103,105 @@ export class CombatEffectSystem {
 
     sprite.play(effect.animationKey);
 
-    // El corte sale desde el mandoble hacia el límite real del ataque.
     this.scene.tweens.add({
       targets: sprite,
       x: endX,
       y: endY,
-      scaleX: effect.scale * 1.08,
-      scaleY: effect.scale * 1.08,
+      scaleX: effect.scale * 1.06,
+      scaleY: effect.scale * 1.06,
       duration: effect.travelDuration,
       ease: "Quad.easeOut",
     });
-
-    this.scene.cameras.main.shake(55, 0.0012);
 
     sprite.once(
       Phaser.Animations.Events.ANIMATION_COMPLETE,
       () => sprite.destroy()
     );
+  }
+
+  playAttack1Secondary(hitbox) {
+    const effect = EFFECTS.attack1Secondary;
+    const direction = this.player.getFacingVector();
+    const angle = this.getDirectionAngle();
+
+    this.scene.time.delayedCall(effect.delay, () => {
+      if (
+        !this.player.isAttacking ||
+        this.player.actionName !== "attack1"
+      ) {
+        return;
+      }
+
+      const position = this.getAttack1EdgePosition(
+        hitbox,
+        direction,
+        effect.nearEdgeInset
+      );
+
+      const sprite = this.scene.add
+        .sprite(
+          position.x,
+          position.y,
+          `${effect.texturePrefix}1`
+        )
+        .setScale(effect.scale * 0.82)
+        .setAngle(angle)
+        .setAlpha(0.88)
+        .setDepth(36);
+
+      sprite.play(effect.animationKey);
+
+      this.scene.tweens.add({
+        targets: sprite,
+        scaleX: effect.scale,
+        scaleY: effect.scale,
+        alpha: { from: 0.65, to: 1 },
+        duration: 120,
+        ease: "Quad.easeOut",
+      });
+
+      sprite.once(
+        Phaser.Animations.Events.ANIMATION_COMPLETE,
+        () => sprite.destroy()
+      );
+    });
+
+    this.scene.time.delayedCall(180, () => {
+      if (
+        this.player.isAttacking &&
+        this.player.actionName === "attack1"
+      ) {
+        this.scene.cameras.main.shake(55, 0.0012);
+      }
+    });
+  }
+
+  getAttack1EdgePosition(hitbox, direction, inset) {
+    if (direction.x > 0) {
+      return {
+        x: hitbox.right - inset,
+        y: hitbox.centerY,
+      };
+    }
+
+    if (direction.x < 0) {
+      return {
+        x: hitbox.left + inset,
+        y: hitbox.centerY,
+      };
+    }
+
+    if (direction.y > 0) {
+      return {
+        x: hitbox.centerX,
+        y: hitbox.bottom - inset,
+      };
+    }
+
+    return {
+      x: hitbox.centerX,
+      y: hitbox.top + inset,
+    };
   }
 
   playDashAttack() {
