@@ -69,11 +69,6 @@ export class GameScene extends Phaser.Scene {
       "/assets/lobby/interior_objects.png"
     );
 
-    this.load.image(
-      "lobby-walls",
-      "/assets/lobby/walls_interior.png"
-    );
-
     this.load.spritesheet(
       "mannequin-1",
       "/assets/lobby/mannequin_1.png",
@@ -123,19 +118,19 @@ export class GameScene extends Phaser.Scene {
     this.trainingDummies = [
       new TrainingDummy(this, {
         x: 995,
-        y: 625,
+        y: 650,
         textureKey: "mannequin-1",
         name: "Dummy A",
       }),
       new TrainingDummy(this, {
         x: 1085,
-        y: 625,
+        y: 650,
         textureKey: "mannequin-2",
         name: "Dummy B",
       }),
       new TrainingDummy(this, {
         x: 1175,
-        y: 625,
+        y: 650,
         textureKey: "mannequin-3",
         name: "Dummy C",
       }),
