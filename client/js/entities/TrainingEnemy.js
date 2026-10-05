@@ -7,6 +7,7 @@ export class TrainingEnemy extends TrainingDummy {
     super(scene, options);
 
     this.player = player;
+    this.enabled = true;
     this.speed = 82;
     this.detectionRange = 360;
     this.attackRange = 82;
@@ -18,11 +19,33 @@ export class TrainingEnemy extends TrainingDummy {
 
     this.sprite.setImmovable(false);
     this.sprite.setPushable(false);
-    this.label.setText(`${this.name} · HOSTIL`);
+    this.label.setText(
+      `${this.name} · HOSTIL`
+    );
   }
 
-  takeDamage(amount, knockbackDirection = null, knockbackStrength = 0) {
-    this.stunnedUntil = this.scene.time.now + 260;
+  setEnabled(enabled) {
+    if (this.enabled === enabled) {
+      return;
+    }
+
+    this.enabled = enabled;
+
+    if (!enabled) {
+      this.sprite.setVelocity(0, 0);
+      this.isEnemyAttacking = false;
+      this.sprite.clearTint();
+    }
+  }
+
+  takeDamage(
+    amount,
+    knockbackDirection = null,
+    knockbackStrength = 0
+  ) {
+    this.stunnedUntil =
+      this.scene.time.now + 260;
+
     this.sprite.setVelocity(0, 0);
 
     return super.takeDamage(
@@ -35,7 +58,10 @@ export class TrainingEnemy extends TrainingDummy {
   update() {
     super.update();
 
-    if (!this.alive) {
+    if (
+      !this.enabled ||
+      !this.alive
+    ) {
       this.sprite.setVelocity(0, 0);
       return;
     }
@@ -47,30 +73,46 @@ export class TrainingEnemy extends TrainingDummy {
 
     if (
       this.isEnemyAttacking ||
-      this.scene.time.now < this.stunnedUntil
+      this.scene.time.now <
+        this.stunnedUntil
     ) {
       this.sprite.setVelocity(0, 0);
       return;
     }
 
-    const dx = this.player.sprite.x - this.sprite.x;
-    const dy = this.player.sprite.y - this.sprite.y;
-    const distance = Math.hypot(dx, dy);
+    const dx =
+      this.player.sprite.x -
+      this.sprite.x;
 
-    if (distance > this.detectionRange) {
+    const dy =
+      this.player.sprite.y -
+      this.sprite.y;
+
+    const distance =
+      Math.hypot(dx, dy);
+
+    if (
+      distance >
+      this.detectionRange
+    ) {
       this.sprite.setVelocity(0, 0);
       return;
     }
 
     if (
-      distance <= this.attackRange &&
-      this.scene.time.now >= this.nextAttackAt
+      distance <=
+        this.attackRange &&
+      this.scene.time.now >=
+        this.nextAttackAt
     ) {
       this.attackPlayer();
       return;
     }
 
-    if (distance <= this.attackRange) {
+    if (
+      distance <=
+      this.attackRange
+    ) {
       this.sprite.setVelocity(0, 0);
       return;
     }
@@ -82,9 +124,16 @@ export class TrainingEnemy extends TrainingDummy {
   }
 
   attackPlayer() {
+    if (!this.enabled) {
+      return;
+    }
+
     this.isEnemyAttacking = true;
+
     this.nextAttackAt =
-      this.scene.time.now + this.attackCooldown;
+      this.scene.time.now +
+      this.attackCooldown;
+
     this.sprite.setVelocity(0, 0);
     this.sprite.setTint(0xff7777);
 
@@ -97,40 +146,64 @@ export class TrainingEnemy extends TrainingDummy {
       ease: "Quad.easeOut",
     });
 
-    this.scene.time.delayedCall(150, () => {
-      if (!this.alive || this.player.isDead) {
-        return;
+    this.scene.time.delayedCall(
+      150,
+      () => {
+        if (
+          !this.enabled ||
+          !this.alive ||
+          this.player.isDead
+        ) {
+          return;
+        }
+
+        const distance =
+          Phaser.Math.Distance.Between(
+            this.sprite.x,
+            this.sprite.y,
+            this.player.sprite.x,
+            this.player.sprite.y
+          );
+
+        if (
+          distance <=
+          this.attackRange + 18
+        ) {
+          this.player.takeDamage(
+            this.attackDamage
+          );
+
+          this.scene.cameras.main.shake(
+            100,
+            0.0035
+          );
+        }
       }
+    );
 
-      const distance = Phaser.Math.Distance.Between(
-        this.sprite.x,
-        this.sprite.y,
-        this.player.sprite.x,
-        this.player.sprite.y
-      );
+    this.scene.time.delayedCall(
+      310,
+      () => {
+        if (this.alive) {
+          this.sprite.clearTint();
+        }
 
-      if (distance <= this.attackRange + 18) {
-        this.player.takeDamage(this.attackDamage);
-        this.scene.cameras.main.shake(100, 0.0035);
+        this.isEnemyAttacking = false;
       }
-    });
-
-    this.scene.time.delayedCall(310, () => {
-      if (this.alive) {
-        this.sprite.clearTint();
-      }
-
-      this.isEnemyAttacking = false;
-    });
+    );
   }
 
   reset() {
     super.reset();
+
     this.isEnemyAttacking = false;
     this.nextAttackAt =
       this.scene.time.now + 700;
     this.stunnedUntil = 0;
-    this.label.setText(`${this.name} · HOSTIL`);
+
+    this.label.setText(
+      `${this.name} · HOSTIL`
+    );
   }
 
   updateHud() {
@@ -142,6 +215,10 @@ export class TrainingEnemy extends TrainingDummy {
     this.label.setText(
       `${this.name} · HOSTIL · ${this.hp} HP`
     );
-    this.hpBar.setScale(this.hp / this.maxHp, 1);
+
+    this.hpBar.setScale(
+      this.hp / this.maxHp,
+      1
+    );
   }
 }

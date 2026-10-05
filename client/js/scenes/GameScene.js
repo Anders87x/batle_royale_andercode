@@ -153,6 +153,17 @@ export class GameScene extends Phaser.Scene {
       650
     );
 
+    this.trainingEnemy = new TrainingEnemy(
+      this,
+      {
+        x: 1175,
+        y: 650,
+        textureKey: "mannequin-3",
+        name: "Dummy C",
+      },
+      this.player
+    );
+
     this.trainingDummies = [
       new TrainingDummy(this, {
         x: 995,
@@ -166,16 +177,7 @@ export class GameScene extends Phaser.Scene {
         textureKey: "mannequin-2",
         name: "Dummy B",
       }),
-      new TrainingEnemy(
-        this,
-        {
-          x: 1175,
-          y: 650,
-          textureKey: "mannequin-3",
-          name: "Dummy C",
-        },
-        this.player
-      ),
+      this.trainingEnemy,
     ];
 
     this.collisionSystem = new CollisionSystem(
@@ -217,8 +219,25 @@ export class GameScene extends Phaser.Scene {
       () => this.handlePlayerDeath()
     );
 
+    this.events.on(
+      "match-started",
+      () => {
+        this.combatSystem.resetCooldowns();
+      }
+    );
+
+    this.events.on(
+      "match-returned-to-lobby",
+      () => {
+        this.combatSystem.resetCooldowns();
+      }
+    );
+
     this.input.on("pointerdown", (pointer) => {
-      if (pointer.leftButtonDown()) {
+      if (
+        pointer.leftButtonDown() &&
+        this.canUseCombat()
+      ) {
         this.combatSystem.requestAbility("attack1");
       }
     });
@@ -244,7 +263,27 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setRoundPixels(true);
   }
 
+  canUseCombat() {
+    const phase =
+      this.networkSystem?.getPhase?.() || "lobby";
+
+    return (
+      phase === "lobby" ||
+      phase === "playing"
+    );
+  }
+
   handlePlayerDeath() {
+    const phase =
+      this.networkSystem?.getPhase?.() || "lobby";
+
+    if (
+      phase === "playing" ||
+      phase === "finished"
+    ) {
+      return;
+    }
+
     if (this.respawnPending) {
       return;
     }
@@ -282,6 +321,14 @@ export class GameScene extends Phaser.Scene {
 
   update() {
     this.player.update();
+
+    const phase =
+      this.networkSystem.getPhase();
+
+    this.trainingEnemy.setEnabled(
+      phase === "lobby"
+    );
+
     this.trainingDummies.forEach((target) => {
       target.update?.();
     });
@@ -289,15 +336,24 @@ export class GameScene extends Phaser.Scene {
     this.combatSystem.update();
     this.networkSystem.update();
 
-    if (this.player.wantsToAttack()) {
+    if (
+      this.canUseCombat() &&
+      this.player.wantsToAttack()
+    ) {
       this.combatSystem.requestAbility("attack1");
     }
 
-    if (this.player.wantsSkill2()) {
+    if (
+      this.canUseCombat() &&
+      this.player.wantsSkill2()
+    ) {
       this.combatSystem.requestAbility("attack2");
     }
 
-    if (this.player.wantsSkill3()) {
+    if (
+      this.canUseCombat() &&
+      this.player.wantsSkill3()
+    ) {
       this.combatSystem.requestAbility("attack3");
     }
 

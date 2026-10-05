@@ -243,6 +243,16 @@ export class CombatSystem {
       this.scene.time.now + ABILITIES[abilityName].cooldown;
   }
 
+  resetCooldowns() {
+    this.cooldownEnds = {
+      attack1: 0,
+      attack2: 0,
+      attack3: 0,
+    };
+
+    this.clearQueuedAbility();
+  }
+
   getCooldownState(abilityName) {
     const ability = ABILITIES[abilityName];
     const remaining = Math.max(

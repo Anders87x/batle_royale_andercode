@@ -10,6 +10,10 @@ const io = new Server(server);
 const PORT = process.env.PORT || 3000;
 const CLIENT_PATH = path.join(__dirname, "..", "client");
 
+const MATCH_MIN_PLAYERS = 2;
+const COUNTDOWN_MS = 3000;
+const RETURN_TO_LOBBY_MS = 5000;
+
 const WORLD_BOUNDS = {
   minX: 40,
   maxX: 1400,
@@ -34,6 +38,16 @@ const ABILITIES = {
 
 const players = new Map();
 
+const match = {
+  phase: "lobby",
+  countdownEndsAt: null,
+  winnerId: null,
+  returnToLobbyAt: null,
+};
+
+let countdownTimer = null;
+let returnToLobbyTimer = null;
+
 app.get("/", (_req, res) => {
   res.sendFile(path.join(CLIENT_PATH, "index.html"));
 });
@@ -46,8 +60,8 @@ function clamp(value, min, max) {
 
 function getSpawn(index) {
   return {
-    x: 545 + (index % 4) * 90,
-    y: 650 + Math.floor(index / 4) * 90,
+    x: 545 + (index % 4) * 105,
+    y: 650 + Math.floor(index / 4) * 95,
   };
 }
 
@@ -55,6 +69,209 @@ function sanitizeFacing(facing) {
   return ["up", "down", "left", "right"].includes(facing)
     ? facing
     : "down";
+}
+
+function publicPlayer(player) {
+  return {
+    id: player.id,
+    x: player.x,
+    y: player.y,
+    facing: player.facing,
+    moving: player.moving,
+    hp: player.hp,
+    isDead: player.isDead,
+    ready: player.ready,
+  };
+}
+
+function getPublicPlayers() {
+  return Array.from(players.values()).map(publicPlayer);
+}
+
+function getMatchState() {
+  return {
+    phase: match.phase,
+    countdownEndsAt: match.countdownEndsAt,
+    winnerId: match.winnerId,
+    returnToLobbyAt: match.returnToLobbyAt,
+    minPlayers: MATCH_MIN_PLAYERS,
+    players: getPublicPlayers(),
+  };
+}
+
+function broadcastMatchState() {
+  io.emit("match:state", getMatchState());
+  io.emit("players:count", players.size);
+}
+
+function broadcastPlayerReset() {
+  io.emit("match:players-reset", getPublicPlayers());
+}
+
+function resetPlayerForRound(player, index) {
+  const spawn = getSpawn(index);
+
+  player.x = spawn.x;
+  player.y = spawn.y;
+  player.facing = "down";
+  player.moving = false;
+  player.hp = 100;
+  player.isDead = false;
+  player.cooldownEnds = {
+    attack1: 0,
+    attack2: 0,
+    attack3: 0,
+  };
+}
+
+function clearCountdownTimer() {
+  if (countdownTimer) {
+    clearTimeout(countdownTimer);
+    countdownTimer = null;
+  }
+}
+
+function clearReturnTimer() {
+  if (returnToLobbyTimer) {
+    clearTimeout(returnToLobbyTimer);
+    returnToLobbyTimer = null;
+  }
+}
+
+function cancelCountdown() {
+  clearCountdownTimer();
+
+  match.phase = "lobby";
+  match.countdownEndsAt = null;
+  match.winnerId = null;
+  match.returnToLobbyAt = null;
+
+  broadcastMatchState();
+}
+
+function allPlayersReady() {
+  return (
+    players.size >= MATCH_MIN_PLAYERS &&
+    Array.from(players.values()).every(
+      (player) => player.ready
+    )
+  );
+}
+
+function maybeStartCountdown() {
+  if (match.phase === "playing" || match.phase === "finished") {
+    return;
+  }
+
+  if (!allPlayersReady()) {
+    if (match.phase === "countdown") {
+      cancelCountdown();
+    } else {
+      broadcastMatchState();
+    }
+
+    return;
+  }
+
+  if (match.phase === "countdown") {
+    return;
+  }
+
+  match.phase = "countdown";
+  match.countdownEndsAt = Date.now() + COUNTDOWN_MS;
+  match.winnerId = null;
+  match.returnToLobbyAt = null;
+
+  broadcastMatchState();
+
+  countdownTimer = setTimeout(() => {
+    countdownTimer = null;
+
+    if (!allPlayersReady()) {
+      cancelCountdown();
+      return;
+    }
+
+    startMatch();
+  }, COUNTDOWN_MS);
+}
+
+function startMatch() {
+  clearCountdownTimer();
+  clearReturnTimer();
+
+  match.phase = "playing";
+  match.countdownEndsAt = null;
+  match.winnerId = null;
+  match.returnToLobbyAt = null;
+
+  Array.from(players.values()).forEach(
+    (player, index) => {
+      resetPlayerForRound(player, index);
+      player.ready = false;
+    }
+  );
+
+  broadcastPlayerReset();
+  broadcastMatchState();
+}
+
+function finishMatch(winnerId) {
+  if (match.phase !== "playing") {
+    return;
+  }
+
+  match.phase = "finished";
+  match.countdownEndsAt = null;
+  match.winnerId = winnerId || null;
+  match.returnToLobbyAt =
+    Date.now() + RETURN_TO_LOBBY_MS;
+
+  broadcastMatchState();
+
+  clearReturnTimer();
+  returnToLobbyTimer = setTimeout(() => {
+    returnToLobbyTimer = null;
+    returnToLobby();
+  }, RETURN_TO_LOBBY_MS);
+}
+
+function returnToLobby() {
+  clearCountdownTimer();
+  clearReturnTimer();
+
+  match.phase = "lobby";
+  match.countdownEndsAt = null;
+  match.winnerId = null;
+  match.returnToLobbyAt = null;
+
+  Array.from(players.values()).forEach(
+    (player, index) => {
+      resetPlayerForRound(player, index);
+      player.ready = false;
+    }
+  );
+
+  broadcastPlayerReset();
+  broadcastMatchState();
+}
+
+function evaluateWinner() {
+  if (match.phase !== "playing") {
+    return;
+  }
+
+  const alivePlayers = Array.from(
+    players.values()
+  ).filter((player) => !player.isDead);
+
+  if (alivePlayers.length <= 1) {
+    finishMatch(
+      alivePlayers.length === 1
+        ? alivePlayers[0].id
+        : null
+    );
+  }
 }
 
 function isInsideRect(px, py, rect, padding = 24) {
@@ -73,6 +290,7 @@ function attackHits(attacker, target, abilityName) {
   if (abilityName === "attack3") {
     const dx = target.x - x;
     const dy = target.y - y;
+
     return Math.hypot(dx, dy) <= 140;
   }
 
@@ -157,7 +375,14 @@ function attackHits(attacker, target, abilityName) {
 }
 
 io.on("connection", (socket) => {
+  if (match.phase === "countdown") {
+    cancelCountdown();
+  }
+
   const spawn = getSpawn(players.size);
+  const joinsAsSpectator =
+    match.phase === "playing" ||
+    match.phase === "finished";
 
   const player = {
     id: socket.id,
@@ -165,8 +390,9 @@ io.on("connection", (socket) => {
     y: spawn.y,
     facing: "down",
     moving: false,
-    hp: 100,
-    isDead: false,
+    hp: joinsAsSpectator ? 0 : 100,
+    isDead: joinsAsSpectator,
+    ready: false,
     cooldownEnds: {
       attack1: 0,
       attack2: 0,
@@ -180,8 +406,12 @@ io.on("connection", (socket) => {
     `Jugador conectado: ${socket.id} · Total: ${players.size}`
   );
 
-  socket.broadcast.emit("player:joined", player);
-  io.emit("players:count", players.size);
+  socket.broadcast.emit(
+    "player:joined",
+    publicPlayer(player)
+  );
+
+  broadcastMatchState();
 
   socket.on("players:sync", () => {
     const current = players.get(socket.id);
@@ -190,21 +420,49 @@ io.on("connection", (socket) => {
       return;
     }
 
-    socket.emit("players:self", current);
     socket.emit(
-      "players:init",
-      Array.from(players.values()).filter(
-        (item) => item.id !== socket.id
-      )
+      "players:self",
+      publicPlayer(current)
     );
 
+    socket.emit(
+      "players:init",
+      Array.from(players.values())
+        .filter((item) => item.id !== socket.id)
+        .map(publicPlayer)
+    );
+
+    socket.emit("match:state", getMatchState());
     socket.emit("players:count", players.size);
+  });
+
+  socket.on("match:ready", ({ ready } = {}) => {
+    const current = players.get(socket.id);
+
+    if (
+      !current ||
+      !["lobby", "countdown"].includes(match.phase)
+    ) {
+      return;
+    }
+
+    current.ready = Boolean(ready);
+
+    if (
+      match.phase === "countdown" &&
+      !current.ready
+    ) {
+      cancelCountdown();
+      return;
+    }
+
+    maybeStartCountdown();
   });
 
   socket.on("player:state", (state = {}) => {
     const current = players.get(socket.id);
 
-    if (!current) {
+    if (!current || current.isDead) {
       return;
     }
 
@@ -224,24 +482,25 @@ io.on("connection", (socket) => {
       );
     }
 
-    current.facing = sanitizeFacing(state.facing);
+    current.facing =
+      sanitizeFacing(state.facing);
     current.moving = Boolean(state.moving);
 
-    socket.broadcast.emit("player:state", {
-      id: socket.id,
-      x: current.x,
-      y: current.y,
-      facing: current.facing,
-      moving: current.moving,
-      hp: current.hp,
-      isDead: current.isDead,
-    });
+    socket.broadcast.emit(
+      "player:state",
+      publicPlayer(current)
+    );
   });
 
   socket.on("player:health", ({ hp } = {}) => {
     const current = players.get(socket.id);
 
-    if (!current || !Number.isFinite(hp)) {
+    if (
+      !current ||
+      !Number.isFinite(hp) ||
+      match.phase === "playing" ||
+      match.phase === "finished"
+    ) {
       return;
     }
 
@@ -259,13 +518,21 @@ io.on("connection", (socket) => {
     const attacker = players.get(socket.id);
     const ability = ABILITIES[abilityName];
 
-    if (!attacker || !ability || attacker.isDead) {
+    if (
+      match.phase !== "playing" ||
+      !attacker ||
+      !ability ||
+      attacker.isDead
+    ) {
       return;
     }
 
     const now = Date.now();
 
-    if (now < attacker.cooldownEnds[abilityName]) {
+    if (
+      now <
+      attacker.cooldownEnds[abilityName]
+    ) {
       return;
     }
 
@@ -280,17 +547,27 @@ io.on("connection", (socket) => {
       facing: attacker.facing,
     });
 
+    let hitAnyPlayer = false;
+
     players.forEach((target, targetId) => {
       if (
         targetId === socket.id ||
         target.isDead ||
-        !attackHits(attacker, target, abilityName)
+        !attackHits(
+          attacker,
+          target,
+          abilityName
+        )
       ) {
         return;
       }
 
-      target.hp = Math.max(0, target.hp - ability.damage);
+      target.hp = Math.max(
+        0,
+        target.hp - ability.damage
+      );
       target.isDead = target.hp <= 0;
+      hitAnyPlayer = true;
 
       io.to(targetId).emit("player:damaged", {
         amount: ability.damage,
@@ -304,6 +581,15 @@ io.on("connection", (socket) => {
         isDead: target.isDead,
       });
     });
+
+    if (hitAnyPlayer) {
+      socket.emit("player:hit-confirm", {
+        abilityName,
+      });
+
+      broadcastMatchState();
+      evaluateWinner();
+    }
   });
 
   socket.on("disconnect", () => {
@@ -317,7 +603,19 @@ io.on("connection", (socket) => {
       id: socket.id,
     });
 
-    io.emit("players:count", players.size);
+    if (players.size === 0) {
+      returnToLobby();
+      return;
+    }
+
+    if (match.phase === "playing") {
+      evaluateWinner();
+    } else if (match.phase === "countdown") {
+      cancelCountdown();
+      maybeStartCountdown();
+    } else {
+      broadcastMatchState();
+    }
   });
 });
 

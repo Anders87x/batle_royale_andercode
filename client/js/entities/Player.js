@@ -173,7 +173,7 @@ export class Player {
     return true;
   }
 
-  die(sync = true) {
+  die(sync = true, emitEvent = true) {
     this.isDead = true;
     this.isHurt = false;
     this.isAttacking = false;
@@ -191,7 +191,9 @@ export class Player {
       this.notifyHealthChanged();
     }
 
-    this.scene.events.emit("player-died");
+    if (emitEvent) {
+      this.scene.events.emit("player-died");
+    }
   }
 
   respawn(sync = true) {

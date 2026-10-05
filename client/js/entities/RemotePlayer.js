@@ -10,18 +10,30 @@ export class RemotePlayer {
     this.targetX = state.x;
     this.targetY = state.y;
     this.moving = false;
+    this.ready = Boolean(state.ready);
     this.isAttacking = false;
     this.actionName = null;
     this.hp = state.hp ?? 100;
     this.maxHp = 100;
     this.isDead = Boolean(state.isDead);
+    this.collider = null;
 
-    this.sprite = scene.add
-      .sprite(state.x, state.y, "swordsman-idle", 0)
+    this.sprite = scene.physics.add
+      .sprite(
+        state.x,
+        state.y,
+        "swordsman-idle",
+        0
+      )
       .setScale(2)
       .setTint(0x93c5fd)
       .setAlpha(0.88)
+      .setImmovable(true)
+      .setPushable(false)
       .setDepth(12);
+
+    this.sprite.body.setSize(22, 20, false);
+    this.sprite.body.setOffset(21, 32);
 
     this.label = scene.add
       .text(state.x, state.y - 76, "JUGADOR", {
@@ -39,18 +51,37 @@ export class RemotePlayer {
       .setDepth(50);
 
     this.hpBackground = scene.add
-      .rectangle(state.x - 32, state.y - 55, 64, 6, 0x111827, 1)
+      .rectangle(
+        state.x - 32,
+        state.y - 55,
+        64,
+        6,
+        0x111827,
+        1
+      )
       .setOrigin(0, 0.5)
       .setDepth(49);
 
     this.hpBar = scene.add
-      .rectangle(state.x - 32, state.y - 55, 64, 6, 0x3b82f6, 1)
+      .rectangle(
+        state.x - 32,
+        state.y - 55,
+        64,
+        6,
+        0x3b82f6,
+        1
+      )
       .setOrigin(0, 0.5)
       .setDepth(50);
 
-    this.effects = new CombatEffectSystem(scene, this);
+    this.effects =
+      new CombatEffectSystem(scene, this);
 
     this.applyState(state);
+  }
+
+  setCollider(collider) {
+    this.collider = collider;
   }
 
   applyState(state) {
@@ -66,36 +97,135 @@ export class RemotePlayer {
       this.facing = state.facing;
     }
 
-    if (typeof state.moving === "boolean") {
+    if (
+      typeof state.moving === "boolean"
+    ) {
       this.moving = state.moving;
     }
 
-    if (Number.isFinite(state.hp)) {
-      this.setHealth(state.hp, Boolean(state.isDead));
+    if (
+      typeof state.ready === "boolean"
+    ) {
+      this.ready = state.ready;
     }
+
+    if (Number.isFinite(state.hp)) {
+      this.setHealth(
+        state.hp,
+        Boolean(state.isDead)
+      );
+    }
+
+    this.updateLabel();
   }
 
-  setHealth(hp, isDead = hp <= 0) {
+  reset(state) {
+    this.facing = state.facing || "down";
+    this.targetX = state.x;
+    this.targetY = state.y;
+    this.moving = false;
+    this.ready = Boolean(state.ready);
+    this.isAttacking = false;
+    this.actionName = null;
+    this.hp = state.hp ?? 100;
+    this.isDead = Boolean(state.isDead);
+
+    this.sprite.setPosition(
+      state.x,
+      state.y
+    );
+
+    this.sprite.setAngle(0);
+    this.sprite.clearTint();
+    this.sprite.setTint(0x93c5fd);
+    this.sprite.setAlpha(0.88);
+
+    if (this.sprite.body) {
+      this.sprite.body.enable =
+        !this.isDead;
+
+      if (!this.isDead) {
+        this.sprite.body.reset(
+          state.x,
+          state.y
+        );
+      }
+    }
+
+    if (this.isDead) {
+      this.sprite.play(
+        `death-${this.facing}`,
+        true
+      );
+    } else {
+      this.sprite.play(
+        `idle-${this.facing}`,
+        true
+      );
+    }
+
+    this.hpBar.setScale(
+      this.hp / this.maxHp,
+      1
+    );
+
+    this.updateLabel();
+  }
+
+  setHealth(
+    hp,
+    isDead = hp <= 0
+  ) {
     const wasDead = this.isDead;
-    this.hp = Math.max(0, Math.min(this.maxHp, hp));
+
+    this.hp = Math.max(
+      0,
+      Math.min(this.maxHp, hp)
+    );
+
     this.isDead = isDead;
+
+    if (this.sprite.body) {
+      this.sprite.body.enable =
+        !this.isDead;
+    }
 
     if (this.isDead && !wasDead) {
       this.isAttacking = false;
       this.actionName = null;
       this.sprite.setAngle(0);
-      this.sprite.play(`death-${this.facing}`, true);
+      this.sprite.play(
+        `death-${this.facing}`,
+        true
+      );
     }
 
     if (!this.isDead && wasDead) {
       this.sprite.setAngle(0);
-      this.sprite.play(`idle-${this.facing}`, true);
+      this.sprite.play(
+        `idle-${this.facing}`,
+        true
+      );
     }
 
-    this.hpBar.setScale(this.hp / this.maxHp, 1);
+    this.hpBar.setScale(
+      this.hp / this.maxHp,
+      1
+    );
   }
 
-  playAttack(abilityName, state = {}) {
+  updateLabel() {
+    this.label.setText(
+      this.ready
+        ? "JUGADOR · LISTO"
+        : "JUGADOR"
+    );
+  }
+
+  playAttack(
+    abilityName,
+    state = {}
+  ) {
     if (this.isDead) {
       return;
     }
@@ -104,10 +234,15 @@ export class RemotePlayer {
     this.isAttacking = true;
     this.actionName = abilityName;
 
-    this.sprite.play(`attack-${this.facing}`, true);
+    this.sprite.play(
+      `attack-${this.facing}`,
+      true
+    );
 
     if (abilityName === "attack1") {
-      this.effects.playAttack1(this.getAttack1Hitbox());
+      this.effects.playAttack1(
+        this.getAttack1Hitbox()
+      );
     } else if (abilityName === "attack2") {
       this.effects.playDashAttack();
     } else if (abilityName === "attack3") {
@@ -118,20 +253,27 @@ export class RemotePlayer {
         angle: 360,
         duration: 360,
         ease: "Linear",
-        onComplete: () => this.sprite.setAngle(0),
+        onComplete: () =>
+          this.sprite.setAngle(0),
       });
     }
 
-    this.scene.time.delayedCall(560, () => {
-      if (this.isDead) {
-        return;
-      }
+    this.scene.time.delayedCall(
+      560,
+      () => {
+        if (this.isDead) {
+          return;
+        }
 
-      this.isAttacking = false;
-      this.actionName = null;
-      this.sprite.setAngle(0);
-      this.sprite.play(`idle-${this.facing}`, true);
-    });
+        this.isAttacking = false;
+        this.actionName = null;
+        this.sprite.setAngle(0);
+        this.sprite.play(
+          `idle-${this.facing}`,
+          true
+        );
+      }
+    );
   }
 
   getAttack1Hitbox() {
@@ -191,24 +333,36 @@ export class RemotePlayer {
 
   update() {
     if (!this.isDead) {
-      this.sprite.x = Phaser.Math.Linear(
-        this.sprite.x,
-        this.targetX,
-        0.28
-      );
+      this.sprite.x =
+        Phaser.Math.Linear(
+          this.sprite.x,
+          this.targetX,
+          0.28
+        );
 
-      this.sprite.y = Phaser.Math.Linear(
-        this.sprite.y,
-        this.targetY,
-        0.28
-      );
+      this.sprite.y =
+        Phaser.Math.Linear(
+          this.sprite.y,
+          this.targetY,
+          0.28
+        );
+
+      if (this.sprite.body?.enable) {
+        this.sprite.body.reset(
+          this.sprite.x,
+          this.sprite.y
+        );
+      }
 
       if (!this.isAttacking) {
         const animation = this.moving
           ? `walk-${this.facing}`
           : `idle-${this.facing}`;
 
-        this.sprite.play(animation, true);
+        this.sprite.play(
+          animation,
+          true
+        );
       }
     }
 
@@ -229,6 +383,7 @@ export class RemotePlayer {
   }
 
   destroy() {
+    this.collider?.destroy();
     this.sprite.destroy();
     this.label.destroy();
     this.hpBackground.destroy();
