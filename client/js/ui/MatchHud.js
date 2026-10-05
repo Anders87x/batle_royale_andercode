@@ -187,6 +187,27 @@ export class MatchHud {
     const now = Date.now();
 
     if (
+      zone.damageStartsAt &&
+      now < zone.damageStartsAt
+    ) {
+      const seconds =
+        Math.max(
+          0,
+          Math.ceil(
+            (
+              zone.damageStartsAt -
+              now
+            ) /
+              1000
+          )
+        );
+
+      return (
+        `Protección inicial · ${seconds}s`
+      );
+    }
+
+    if (
       zone.shrinkStartsAt &&
       now <
         zone.shrinkStartsAt

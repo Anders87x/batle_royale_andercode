@@ -32,26 +32,27 @@ const ZONE_CONFIG = {
   centerX: 2320,
   centerY: 450,
   damageIntervalMs: 1000,
+  initialGraceMs: 15000,
   phases: [
     {
-      startRadius: 390,
-      endRadius: 300,
-      waitMs: 8000,
-      shrinkMs: 15000,
+      startRadius: 620,
+      endRadius: 440,
+      waitMs: 15000,
+      shrinkMs: 18000,
       damage: 2,
     },
     {
-      startRadius: 300,
-      endRadius: 210,
-      waitMs: 7000,
-      shrinkMs: 14000,
+      startRadius: 440,
+      endRadius: 280,
+      waitMs: 8000,
+      shrinkMs: 16000,
       damage: 4,
     },
     {
-      startRadius: 210,
+      startRadius: 280,
       endRadius: 120,
-      waitMs: 5000,
-      shrinkMs: 12000,
+      waitMs: 6000,
+      shrinkMs: 14000,
       damage: 7,
     },
   ],
@@ -95,6 +96,7 @@ const match = {
     shrinkEndsAt: null,
     damage:
       ZONE_CONFIG.phases[0].damage,
+    damageStartsAt: null,
     damageIntervalMs:
       ZONE_CONFIG.damageIntervalMs,
   },
@@ -432,6 +434,7 @@ function resetZone() {
     shrinkEndsAt: null,
     damage:
       firstPhase.damage,
+    damageStartsAt: null,
     damageIntervalMs:
       ZONE_CONFIG.damageIntervalMs,
   };
@@ -478,6 +481,10 @@ function startZonePhase(
       phase.shrinkMs,
     damage:
       phase.damage,
+    damageStartsAt:
+      phaseIndex === 0
+        ? now + ZONE_CONFIG.initialGraceMs
+        : now,
     damageIntervalMs:
       ZONE_CONFIG.damageIntervalMs,
   };
@@ -1004,6 +1011,13 @@ setInterval(() => {
   }
 
   const now = Date.now();
+
+  if (
+    match.zone.damageStartsAt &&
+    now < match.zone.damageStartsAt
+  ) {
+    return;
+  }
 
   if (
     now <

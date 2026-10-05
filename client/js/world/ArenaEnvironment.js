@@ -4,20 +4,175 @@ import {
   WORLD_HEIGHT,
 } from "../config/game-config.js";
 
+const OBSTACLES = [
+  {
+    key: "undead-tree",
+    x: 1745,
+    y: 135,
+    scale: 1.15,
+    body: [46, 34, 20],
+  },
+  {
+    key: "undead-tree",
+    x: 2895,
+    y: 145,
+    scale: 1.1,
+    body: [44, 34, 18],
+  },
+  {
+    key: "undead-tree",
+    x: 1760,
+    y: 790,
+    scale: 1.15,
+    body: [46, 34, 20],
+  },
+  {
+    key: "undead-tree",
+    x: 2890,
+    y: 785,
+    scale: 1.1,
+    body: [44, 34, 18],
+  },
+  {
+    key: "undead-broken-tree",
+    x: 2220,
+    y: 145,
+    scale: 1.05,
+    body: [100, 26, 6],
+  },
+  {
+    key: "undead-broken-tree",
+    x: 2440,
+    y: 760,
+    scale: 1.05,
+    body: [100, 26, 6],
+  },
+  {
+    key: "undead-rock",
+    x: 1980,
+    y: 180,
+    scale: 1.1,
+    body: [50, 38, 5],
+  },
+  {
+    key: "undead-rock",
+    x: 2660,
+    y: 175,
+    scale: 1,
+    body: [46, 34, 5],
+  },
+  {
+    key: "undead-rock",
+    x: 1900,
+    y: 705,
+    scale: 1.05,
+    body: [48, 36, 5],
+  },
+  {
+    key: "undead-rock",
+    x: 2760,
+    y: 710,
+    scale: 1.1,
+    body: [50, 38, 5],
+  },
+  {
+    key: "undead-ruin",
+    x: 2040,
+    y: 395,
+    scale: 1.05,
+    body: [74, 48, 18],
+  },
+  {
+    key: "undead-ruin",
+    x: 2610,
+    y: 540,
+    scale: 1.05,
+    body: [74, 48, 18],
+  },
+  {
+    key: "undead-lich",
+    x: 2320,
+    y: 450,
+    scale: 0.82,
+    body: [120, 58, 28],
+  },
+  {
+    key: "undead-skulls",
+    x: 2180,
+    y: 315,
+    scale: 0.9,
+    body: [62, 38, 10],
+  },
+  {
+    key: "undead-skulls",
+    x: 2470,
+    y: 595,
+    scale: 0.9,
+    body: [62, 38, 10],
+  },
+  {
+    key: "undead-crystal",
+    x: 2140,
+    y: 585,
+    scale: 1,
+    body: [38, 30, 8],
+  },
+  {
+    key: "undead-crystal",
+    x: 2540,
+    y: 320,
+    scale: 1,
+    body: [38, 30, 8],
+  },
+  {
+    key: "undead-thorn",
+    x: 1860,
+    y: 470,
+    scale: 0.9,
+    body: [74, 34, 8],
+  },
+  {
+    key: "undead-thorn",
+    x: 2800,
+    y: 440,
+    scale: 0.9,
+    body: [74, 34, 8],
+  },
+];
+
+const DECORATIONS = [
+  ["undead-grave", 1880, 335, 1],
+  ["undead-grave", 1920, 355, 0.9],
+  ["undead-grave", 1960, 330, 0.95],
+  ["undead-grave", 2720, 545, 1],
+  ["undead-grave", 2760, 565, 0.9],
+  ["undead-grave", 2800, 540, 0.95],
+  ["undead-plant", 2050, 690, 0.85],
+  ["undead-plant", 2680, 285, 0.85],
+  ["undead-plant", 2260, 650, 0.7],
+  ["undead-plant", 2410, 250, 0.7],
+  ["undead-grave", 2290, 290, 0.8],
+  ["undead-grave", 2380, 625, 0.8],
+];
+
 export class ArenaEnvironment {
   constructor(scene) {
     this.scene = scene;
     this.blockers = [];
 
-    this.drawArena();
+    this.drawGround();
+    this.createUndeadDecor();
+    this.createBounds();
   }
 
-  drawArena() {
+  drawGround() {
     const graphics =
-      this.scene.add.graphics().setDepth(-29);
+      this.scene.add
+        .graphics()
+        .setDepth(-30);
 
     graphics.fillStyle(
-      0x23352f,
+      0x4d5147,
       1
     );
 
@@ -28,46 +183,56 @@ export class ArenaEnvironment {
       WORLD_HEIGHT
     );
 
-    for (
-      let y = 40;
-      y < WORLD_HEIGHT - 40;
-      y += 64
-    ) {
-      const alternate =
-        Math.floor(y / 64) % 2 === 0;
+    graphics.fillStyle(
+      0x5b5d50,
+      0.9
+    );
 
-      graphics.fillStyle(
-        alternate
-          ? 0x2d443b
-          : 0x2a3e36,
-        1
-      );
+    const patches = [
+      [1780, 250, 250, 150],
+      [2080, 650, 300, 135],
+      [2410, 120, 320, 145],
+      [2700, 610, 240, 150],
+      [2250, 380, 180, 150],
+    ];
 
-      graphics.fillRect(
-        ARENA_X + 40,
-        y,
-        ARENA_WIDTH - 80,
-        64
-      );
+    patches.forEach(
+      ([x, y, width, height]) => {
+        graphics.fillEllipse(
+          x,
+          y,
+          width,
+          height
+        );
+      }
+    );
 
-      graphics.lineStyle(
-        1,
-        0x182721,
-        0.55
-      );
+    graphics.fillStyle(
+      0x343b35,
+      0.8
+    );
 
-      graphics.lineBetween(
-        ARENA_X + 40,
-        y,
-        ARENA_X + ARENA_WIDTH - 40,
-        y
-      );
-    }
+    const darkPatches = [
+      [1900, 520, 180, 85],
+      [2620, 350, 180, 90],
+      [2320, 720, 220, 72],
+    ];
+
+    darkPatches.forEach(
+      ([x, y, width, height]) => {
+        graphics.fillEllipse(
+          x,
+          y,
+          width,
+          height
+        );
+      }
+    );
 
     graphics.lineStyle(
       4,
-      0x7b8f79,
-      0.8
+      0x1e2722,
+      0.9
     );
 
     graphics.strokeRect(
@@ -77,50 +242,19 @@ export class ArenaEnvironment {
       WORLD_HEIGHT - 80
     );
 
-    graphics.fillStyle(
-      0x101916,
-      1
-    );
-
-    graphics.fillRect(
-      ARENA_X,
-      0,
-      40,
-      WORLD_HEIGHT
-    );
-
-    graphics.fillRect(
-      ARENA_X + ARENA_WIDTH - 40,
-      0,
-      40,
-      WORLD_HEIGHT
-    );
-
-    graphics.fillRect(
-      ARENA_X,
-      0,
-      ARENA_WIDTH,
-      40
-    );
-
-    graphics.fillRect(
-      ARENA_X,
-      WORLD_HEIGHT - 40,
-      ARENA_WIDTH,
-      40
-    );
-
     this.scene.add
       .text(
-        ARENA_X + ARENA_WIDTH / 2,
-        78,
-        "ARENA BATTLE ROYALE",
+        ARENA_X +
+          ARENA_WIDTH / 2,
+        72,
+        "TIERRAS DE LOS NO MUERTOS",
         {
           fontFamily: "Arial",
-          fontSize: "24px",
+          fontSize: "22px",
           fontStyle: "bold",
-          color: "#d1fae5",
-          backgroundColor: "#0f1f19cc",
+          color: "#d8dfcf",
+          backgroundColor:
+            "#111713cc",
           padding: {
             x: 14,
             y: 8,
@@ -128,8 +262,67 @@ export class ArenaEnvironment {
         }
       )
       .setOrigin(0.5)
-      .setDepth(-10);
+      .setDepth(-3);
+  }
 
+  createUndeadDecor() {
+    OBSTACLES.forEach(
+      ({
+        key,
+        x,
+        y,
+        scale,
+        body,
+      }) => {
+        this.addObstacle(
+          key,
+          x,
+          y,
+          scale,
+          body
+        );
+      }
+    );
+
+    DECORATIONS.forEach(
+      ([key, x, y, scale]) => {
+        this.scene.add
+          .image(
+            x,
+            y,
+            key
+          )
+          .setScale(scale)
+          .setDepth(-4);
+      }
+    );
+  }
+
+  addObstacle(
+    key,
+    x,
+    y,
+    scale,
+    [width, height, offsetY]
+  ) {
+    this.scene.add
+      .image(
+        x,
+        y,
+        key
+      )
+      .setScale(scale)
+      .setDepth(-3);
+
+    return this.addBlocker(
+      x,
+      y + offsetY,
+      width,
+      height
+    );
+  }
+
+  createBounds() {
     this.addBlocker(
       ARENA_X + 20,
       WORLD_HEIGHT / 2,
@@ -138,21 +331,25 @@ export class ArenaEnvironment {
     );
 
     this.addBlocker(
-      ARENA_X + ARENA_WIDTH - 20,
+      ARENA_X +
+        ARENA_WIDTH -
+        20,
       WORLD_HEIGHT / 2,
       40,
       WORLD_HEIGHT
     );
 
     this.addBlocker(
-      ARENA_X + ARENA_WIDTH / 2,
+      ARENA_X +
+        ARENA_WIDTH / 2,
       20,
       ARENA_WIDTH,
       40
     );
 
     this.addBlocker(
-      ARENA_X + ARENA_WIDTH / 2,
+      ARENA_X +
+        ARENA_WIDTH / 2,
       WORLD_HEIGHT - 20,
       ARENA_WIDTH,
       40

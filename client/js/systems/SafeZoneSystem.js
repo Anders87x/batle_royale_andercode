@@ -169,10 +169,20 @@ export class SafeZoneSystem {
     const outside =
       this.isPlayerOutside(radius);
 
+    const damageActive =
+      !this.zone.damageStartsAt ||
+      Date.now() >=
+        this.zone.damageStartsAt;
+
     this.warningText
       .setText(
-        `FUERA DE LA ZONA · -${this.zone.damage} HP/s`
+        damageActive
+          ? `FUERA DE LA ZONA · -${this.zone.damage} HP/s`
+          : "PROTECCIÓN INICIAL"
       )
-      .setVisible(outside);
+      .setVisible(
+        outside &&
+        damageActive
+      );
   }
 }

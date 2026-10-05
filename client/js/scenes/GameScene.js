@@ -73,6 +73,56 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.load.image(
+      "undead-tree",
+      "/assets/arena/undead/tree.png"
+    );
+
+    this.load.image(
+      "undead-broken-tree",
+      "/assets/arena/undead/broken-tree.png"
+    );
+
+    this.load.image(
+      "undead-grave",
+      "/assets/arena/undead/grave.png"
+    );
+
+    this.load.image(
+      "undead-rock",
+      "/assets/arena/undead/rock.png"
+    );
+
+    this.load.image(
+      "undead-crystal",
+      "/assets/arena/undead/crystal.png"
+    );
+
+    this.load.image(
+      "undead-ruin",
+      "/assets/arena/undead/ruin.png"
+    );
+
+    this.load.image(
+      "undead-plant",
+      "/assets/arena/undead/plant.png"
+    );
+
+    this.load.image(
+      "undead-thorn",
+      "/assets/arena/undead/thorn.png"
+    );
+
+    this.load.image(
+      "undead-skulls",
+      "/assets/arena/undead/skulls.png"
+    );
+
+    this.load.image(
+      "undead-lich",
+      "/assets/arena/undead/lich.png"
+    );
+
+    this.load.image(
       "ability-icon-attack1",
       "/assets/ui/abilities/attack1.png"
     );
