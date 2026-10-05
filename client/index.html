@@ -26,6 +26,7 @@
       <nav class="site-nav" aria-label="Navegación principal">
         <a href="#como-jugar">Cómo jugar</a>
         <a href="#habilidades">Habilidades</a>
+        <a href="#tecnologia">Tecnología</a>
         <a href="#creador">Creador</a>
       </nav>
 
@@ -266,6 +267,135 @@
               <span><small>COOLDOWN</small><strong>7s</strong></span>
             </div>
           </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="tecnologia" class="content-section tech-section">
+      <div class="section-shell">
+        <div class="tech-heading">
+          <div class="section-heading">
+            <p class="kicker">CONSTRUIDO PARA LA WEB</p>
+            <h2>La tecnología detrás de la batalla.</h2>
+            <p>
+              El juego combina renderizado 2D, físicas, comunicación en tiempo real
+              y un servidor que controla el estado de cada partida. Todo corre
+              directamente en el navegador.
+            </p>
+          </div>
+
+          <div class="tech-flow" aria-label="Arquitectura del juego">
+            <span>NAVEGADOR</span>
+            <i>→</i>
+            <span>PHASER</span>
+            <i>→</i>
+            <span>SOCKET.IO</span>
+            <i>→</i>
+            <span>NODE.JS</span>
+          </div>
+        </div>
+
+        <div class="tech-layout">
+          <div class="tech-stack">
+            <article class="tech-card">
+              <div class="tech-logo tech-logo-phaser">P</div>
+              <div>
+                <span class="tech-category">GAME ENGINE</span>
+                <h3>Phaser 4.2.1</h3>
+                <p>Renderizado 2D, animaciones, cámara, input y físicas Arcade.</p>
+              </div>
+              <span class="tech-status">CLIENTE</span>
+            </article>
+
+            <article class="tech-card">
+              <div class="tech-logo tech-logo-socket">↯</div>
+              <div>
+                <span class="tech-category">REAL TIME</span>
+                <h3>Socket.IO 4.8.1</h3>
+                <p>Sincroniza jugadores, ataques, lobby, vida, zona y eliminaciones.</p>
+              </div>
+              <span class="tech-status">ONLINE</span>
+            </article>
+
+            <article class="tech-card">
+              <div class="tech-logo tech-logo-node">N</div>
+              <div>
+                <span class="tech-category">BACKEND</span>
+                <h3>Node.js + Express 5</h3>
+                <p>Servidor de partidas, validaciones, estados y entrega del cliente web.</p>
+              </div>
+              <span class="tech-status">SERVER</span>
+            </article>
+
+            <article class="tech-card">
+              <div class="tech-logo tech-logo-js">JS</div>
+              <div>
+                <span class="tech-category">FRONTEND</span>
+                <h3>JavaScript + HTML5 + CSS</h3>
+                <p>Interfaz, landing, HUD, sistemas modulares y experiencia responsive.</p>
+              </div>
+              <span class="tech-status">WEB</span>
+            </article>
+          </div>
+
+          <div class="tech-showcase">
+            <div class="tech-showcase-head">
+              <div>
+                <span class="tech-live-dot"></span>
+                <strong>GAME SYSTEM PREVIEW</strong>
+              </div>
+              <span>ASSETS REALES DEL JUEGO</span>
+            </div>
+
+            <div class="tech-game-preview">
+              <div class="tech-preview-grid"></div>
+              <div class="tech-preview-zone"></div>
+
+              <div class="tech-preview-hud">
+                <span>Ander</span>
+                <div><i style="width: 78%"></i></div>
+                <small>78 / 100 HP</small>
+              </div>
+
+              <div class="tech-character-block tech-character-block-one">
+                <span class="tech-character-label">IDLE</span>
+                <div class="tech-character tech-character-idle" aria-hidden="true"></div>
+              </div>
+
+              <div class="tech-character-block tech-character-block-two">
+                <span class="tech-character-label">ATTACK</span>
+                <div class="tech-character tech-character-attack" aria-hidden="true"></div>
+              </div>
+
+              <div class="tech-impact-ring"></div>
+
+              <div class="tech-preview-abilities" aria-label="Interfaz de habilidades">
+                <div>
+                  <span>LMB</span>
+                  <img src="/assets/ui/abilities/attack1.png" alt="Ataque normal">
+                </div>
+                <div>
+                  <span>Q</span>
+                  <img src="/assets/ui/abilities/attack2.png" alt="Embestida">
+                </div>
+                <div>
+                  <span>E</span>
+                  <img src="/assets/ui/abilities/attack3.png" alt="Giro 360 grados">
+                </div>
+              </div>
+
+              <div class="tech-preview-event">
+                <span>●</span>
+                <p><strong>Socket conectado</strong><small>Estado sincronizado en tiempo real</small></p>
+              </div>
+            </div>
+
+            <div class="tech-showcase-foot">
+              <span><i></i> Físicas Arcade</span>
+              <span><i></i> PvP sincronizado</span>
+              <span><i></i> Assets pixel art</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
