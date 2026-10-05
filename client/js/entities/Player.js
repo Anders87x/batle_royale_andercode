@@ -7,8 +7,13 @@ export class Player {
     this.scene = scene;
     this.facing = "down";
     this.isAttacking = false;
+    this.isHurt = false;
+    this.isDead = false;
     this.actionName = null;
     this.forcedVelocity = null;
+
+    this.maxHp = 100;
+    this.hp = this.maxHp;
 
     this.sprite = scene.physics.add
       .sprite(x, y, "swordsman-idle", 0)
@@ -61,8 +66,12 @@ export class Player {
     return Phaser.Input.Keyboard.JustDown(this.skill3Key);
   }
 
+  canAct() {
+    return !this.isDead && !this.isHurt;
+  }
+
   beginAttack(actionName = "attack1") {
-    if (this.isAttacking) {
+    if (this.isAttacking || !this.canAct()) {
       return false;
     }
 
@@ -90,12 +99,78 @@ export class Player {
   }
 
   finishAction() {
+    if (this.isDead || this.isHurt) {
+      return;
+    }
+
     this.isAttacking = false;
     this.actionName = null;
     this.forcedVelocity = null;
     this.stopMovement();
     this.sprite.setAngle(0);
     this.sprite.play(`idle-${this.facing}`, true);
+  }
+
+  takeDamage(amount) {
+    if (this.isDead) {
+      return false;
+    }
+
+    this.hp = Math.max(0, this.hp - amount);
+    this.isAttacking = false;
+    this.actionName = null;
+    this.forcedVelocity = null;
+    this.stopMovement();
+    this.sprite.setAngle(0);
+
+    if (this.hp === 0) {
+      this.die();
+      return true;
+    }
+
+    this.isHurt = true;
+    const hurtAnimationKey = `hurt-${this.facing}`;
+    this.sprite.play(hurtAnimationKey, true);
+
+    this.sprite.once(
+      Phaser.Animations.Events.ANIMATION_COMPLETE,
+      (animation) => {
+        if (
+          animation.key !== hurtAnimationKey ||
+          this.isDead
+        ) {
+          return;
+        }
+
+        this.isHurt = false;
+        this.sprite.play(`idle-${this.facing}`, true);
+      }
+    );
+
+    return true;
+  }
+
+  die() {
+    this.isDead = true;
+    this.isHurt = false;
+    this.isAttacking = false;
+    this.actionName = null;
+    this.forcedVelocity = null;
+    this.stopMovement();
+
+    if (this.sprite.body) {
+      this.sprite.body.enable = false;
+    }
+
+    this.sprite.play(`death-${this.facing}`, true);
+  }
+
+  heal(amount) {
+    if (this.isDead) {
+      return;
+    }
+
+    this.hp = Math.min(this.maxHp, this.hp + amount);
   }
 
   setForcedVelocity(x, y) {
@@ -127,6 +202,11 @@ export class Player {
   }
 
   update() {
+    if (this.isDead || this.isHurt) {
+      this.stopMovement();
+      return;
+    }
+
     if (this.isAttacking) {
       if (this.forcedVelocity) {
         this.sprite.setVelocity(

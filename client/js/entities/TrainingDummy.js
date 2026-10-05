@@ -76,18 +76,25 @@ export class TrainingDummy {
     );
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, knockbackDirection = null, knockbackStrength = 0) {
     if (!this.alive) {
-      return;
+      return false;
     }
 
     this.hp = Math.max(0, this.hp - amount);
     this.showDamageText(amount);
     this.updateHud();
 
+    if (knockbackDirection && knockbackStrength > 0) {
+      this.applyKnockback(
+        knockbackDirection,
+        knockbackStrength
+      );
+    }
+
     if (this.hp === 0) {
       this.knockOut();
-      return;
+      return true;
     }
 
     this.sprite.play(this.hurtAnimationKey, true);
@@ -99,6 +106,36 @@ export class TrainingDummy {
         }
       }
     );
+
+    return true;
+  }
+
+  applyKnockback(direction, strength) {
+    const length = Math.hypot(direction.x, direction.y);
+
+    if (length === 0) {
+      return;
+    }
+
+    const dx = (direction.x / length) * strength;
+    const dy = (direction.y / length) * strength;
+
+    const targets = [
+      this.sprite,
+      this.label,
+      this.hpBarBackground,
+      this.hpBar,
+    ];
+
+    this.scene.tweens.killTweensOf(targets);
+
+    this.scene.tweens.add({
+      targets,
+      x: `+=${dx}`,
+      y: `+=${dy}`,
+      duration: 115,
+      ease: "Quad.easeOut",
+    });
   }
 
   showDamageText(amount) {
@@ -137,7 +174,24 @@ export class TrainingDummy {
     this.hp = this.maxHp;
     this.alive = true;
 
+    this.scene.tweens.killTweensOf([
+      this.sprite,
+      this.label,
+      this.hpBarBackground,
+      this.hpBar,
+    ]);
+
     this.sprite.setPosition(this.spawnX, this.spawnY);
+    this.label.setPosition(this.spawnX, this.spawnY - 64);
+    this.hpBarBackground.setPosition(
+      this.spawnX - 36,
+      this.spawnY - 44
+    );
+    this.hpBar.setPosition(
+      this.spawnX - 36,
+      this.spawnY - 44
+    );
+
     this.sprite.body.enable = true;
     this.sprite.clearTint();
     this.sprite.setAlpha(1);

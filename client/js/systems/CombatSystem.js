@@ -23,6 +23,7 @@ export class CombatSystem {
     this.queuedAbility = null;
     this.queueExpiresAt = 0;
     this.inputBufferMs = 650;
+    this.hitStopActive = false;
   }
 
   requestAbility(abilityName) {
@@ -112,7 +113,8 @@ export class CombatSystem {
           this.applyRectangleHit(
             attackHitbox,
             ABILITIES.attack1.damage,
-            0xfacc15
+            0xfacc15,
+            22
           );
         }
       }
@@ -155,7 +157,8 @@ export class CombatSystem {
           this.applyRectangleHit(
             this.getDashHitbox(startX, startY, direction),
             ABILITIES.attack2.damage,
-            0x38bdf8
+            0x38bdf8,
+            36
           );
         }
       }
@@ -206,7 +209,8 @@ export class CombatSystem {
         ) {
           this.applyCircleHit(
             this.getSpinHitbox(),
-            ABILITIES.attack3.damage
+            ABILITIES.attack3.damage,
+            28
           );
         }
       }
@@ -245,10 +249,13 @@ export class CombatSystem {
     };
   }
 
-  applyRectangleHit(hitbox, damage, color) {
+  applyRectangleHit(hitbox, damage, color, knockbackStrength = 22) {
     if (SHOW_HITBOX_DEBUG) {
       this.showRectangleDebug(hitbox, color);
     }
+
+    let hitSomething = false;
+    const knockbackDirection = this.player.getFacingVector();
 
     this.targets.forEach((target) => {
       if (!target.alive) {
@@ -261,15 +268,26 @@ export class CombatSystem {
           target.getHurtbox()
         )
       ) {
-        target.takeDamage(damage);
+        target.takeDamage(
+          damage,
+          knockbackDirection,
+          knockbackStrength
+        );
+        hitSomething = true;
       }
     });
+
+    if (hitSomething) {
+      this.triggerHitStop(60);
+    }
   }
 
-  applyCircleHit(hitbox, damage) {
+  applyCircleHit(hitbox, damage, knockbackStrength = 28) {
     if (SHOW_HITBOX_DEBUG) {
       this.showCircleDebug(hitbox);
     }
+
+    let hitSomething = false;
 
     this.targets.forEach((target) => {
       if (!target.alive) {
@@ -277,8 +295,38 @@ export class CombatSystem {
       }
 
       if (this.circleIntersectsRectangle(hitbox, target.getHurtbox())) {
-        target.takeDamage(damage);
+        const direction = {
+          x: target.sprite.x - this.player.sprite.x,
+          y: target.sprite.y - this.player.sprite.y,
+        };
+
+        target.takeDamage(
+          damage,
+          direction,
+          knockbackStrength
+        );
+        hitSomething = true;
       }
+    });
+
+    if (hitSomething) {
+      this.triggerHitStop(70);
+    }
+  }
+
+  triggerHitStop(duration = 60) {
+    if (this.hitStopActive) {
+      return;
+    }
+
+    this.hitStopActive = true;
+    this.scene.physics.world.pause();
+    this.scene.anims.pauseAll();
+
+    this.scene.time.delayedCall(duration, () => {
+      this.scene.anims.resumeAll();
+      this.scene.physics.world.resume();
+      this.hitStopActive = false;
     });
   }
 

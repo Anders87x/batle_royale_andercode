@@ -10,6 +10,7 @@ import { CombatSystem } from "../systems/CombatSystem.js";
 import { CombatEffectSystem } from "../systems/CombatEffectSystem.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
 import { AbilityHud } from "../ui/AbilityHud.js";
+import { PlayerHud } from "../ui/PlayerHud.js";
 import { LobbyEnvironment } from "../world/LobbyEnvironment.js";
 
 const Phaser = window.Phaser;
@@ -195,6 +196,11 @@ export class GameScene extends Phaser.Scene {
       this.combatSystem
     );
 
+    this.playerHud = new PlayerHud(
+      this,
+      this.player
+    );
+
     this.input.on("pointerdown", (pointer) => {
       if (pointer.leftButtonDown()) {
         this.combatSystem.requestAbility("attack1");
@@ -261,5 +267,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.abilityHud.update();
+    this.playerHud.update();
   }
 }
