@@ -1,32 +1,25 @@
 export class CollisionSystem {
-  constructor(scene, player, enemy, blockers = []) {
+  constructor(scene, player, targets = [], blockers = []) {
     this.scene = scene;
     this.player = player;
-    this.enemy = enemy;
+    this.targets = targets;
     this.blockers = blockers;
 
-    this.configureBodies();
+    this.configurePlayerBody();
     this.createColliders();
   }
 
-  configureBodies() {
-    // El sprite mide 64x64, pero el cuerpo visual ocupa solo una parte.
-    // Usamos una caja pequeña alrededor de los pies/cuerpo para que
-    // los personajes puedan acercarse sin chocar con píxeles transparentes.
+  configurePlayerBody() {
     this.player.sprite.body.setSize(22, 20, false);
     this.player.sprite.body.setOffset(21, 32);
-
-    this.enemy.sprite.body.setSize(22, 20, false);
-    this.enemy.sprite.body.setOffset(21, 32);
-
-    this.enemy.sprite.setImmovable(true);
-    this.enemy.sprite.setPushable(false);
   }
 
   createColliders() {
-    this.playerEnemyCollider = this.scene.physics.add.collider(
-      this.player.sprite,
-      this.enemy.sprite
+    this.targetColliders = this.targets.map((target) =>
+      this.scene.physics.add.collider(
+        this.player.sprite,
+        target.sprite
+      )
     );
 
     this.environmentColliders = this.blockers.map((blocker) =>

@@ -5,7 +5,7 @@ import {
 } from "../config/game-config.js";
 import { createSwordsmanAnimations } from "../animations/swordsmanAnimations.js";
 import { Player } from "../entities/Player.js";
-import { Enemy } from "../entities/Enemy.js";
+import { TrainingDummy } from "../entities/TrainingDummy.js";
 import { CombatSystem } from "../systems/CombatSystem.js";
 import { CollisionSystem } from "../systems/CollisionSystem.js";
 import { LobbyEnvironment } from "../world/LobbyEnvironment.js";
@@ -69,33 +69,6 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.load.spritesheet(
-      "guildmaster",
-      "/assets/lobby/guildmaster.png",
-      {
-        frameWidth: 32,
-        frameHeight: 32,
-      }
-    );
-
-    this.load.spritesheet(
-      "lobby-fire",
-      "/assets/lobby/fire.png",
-      {
-        frameWidth: 32,
-        frameHeight: 32,
-      }
-    );
-
-    this.load.spritesheet(
-      "lobby-fighter",
-      "/assets/lobby/fighter_sword.png",
-      {
-        frameWidth: 64,
-        frameHeight: 64,
-      }
-    );
-
-    this.load.spritesheet(
       "mannequin-1",
       "/assets/lobby/mannequin_1.png",
       {
@@ -137,27 +110,42 @@ export class GameScene extends Phaser.Scene {
 
     this.player = new Player(
       this,
-      670,
+      545,
       650
     );
 
-    this.enemy = new Enemy(
-      this,
-      1010,
-      625
-    );
+    this.trainingDummies = [
+      new TrainingDummy(this, {
+        x: 995,
+        y: 625,
+        textureKey: "mannequin-1",
+        name: "Dummy A",
+      }),
+      new TrainingDummy(this, {
+        x: 1085,
+        y: 625,
+        textureKey: "mannequin-2",
+        name: "Dummy B",
+      }),
+      new TrainingDummy(this, {
+        x: 1175,
+        y: 625,
+        textureKey: "mannequin-3",
+        name: "Dummy C",
+      }),
+    ];
 
     this.collisionSystem = new CollisionSystem(
       this,
       this.player,
-      this.enemy,
+      this.trainingDummies,
       this.lobby.getBlockers()
     );
 
     this.combatSystem = new CombatSystem(
       this,
       this.player,
-      this.enemy
+      this.trainingDummies
     );
 
     this.input.on("pointerdown", (pointer) => {
@@ -212,7 +200,7 @@ export class GameScene extends Phaser.Scene {
       .text(
         18,
         52,
-        "Explora el lobby. A la derecha está la zona de entrenamiento.",
+        "Los 3 muñecos tienen 100 HP, reciben daño y bloquean el paso.",
         {
           fontFamily: "Arial",
           fontSize: "14px",

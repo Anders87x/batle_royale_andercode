@@ -6,10 +6,10 @@ import {
 const Phaser = window.Phaser;
 
 export class CombatSystem {
-  constructor(scene, player, enemy) {
+  constructor(scene, player, targets = []) {
     this.scene = scene;
     this.player = player;
-    this.enemy = enemy;
+    this.targets = targets;
   }
 
   startAttack() {
@@ -27,25 +27,23 @@ export class CombatSystem {
   }
 
   applyAttackHit() {
-    if (!this.enemy.alive) {
-      return;
-    }
-
     const attackHitbox = this.getAttackHitbox();
     this.showHitboxDebug(attackHitbox);
 
-    const enemyHurtbox = this.enemy.getHurtbox();
+    this.targets.forEach((target) => {
+      if (!target.alive) {
+        return;
+      }
 
-    const didHit = Phaser.Geom.Rectangle.Overlaps(
-      attackHitbox,
-      enemyHurtbox
-    );
+      const didHit = Phaser.Geom.Rectangle.Overlaps(
+        attackHitbox,
+        target.getHurtbox()
+      );
 
-    if (!didHit) {
-      return;
-    }
-
-    this.enemy.takeDamage(ATTACK_DAMAGE);
+      if (didHit) {
+        target.takeDamage(ATTACK_DAMAGE);
+      }
+    });
   }
 
   getAttackHitbox() {
@@ -104,7 +102,7 @@ export class CombatSystem {
         0.18
       )
       .setStrokeStyle(2, 0xfde047, 0.95)
-      .setDepth(20);
+      .setDepth(30);
 
     this.scene.time.delayedCall(130, () => {
       debugBox.destroy();
