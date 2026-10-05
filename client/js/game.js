@@ -19,6 +19,18 @@ const DIRECTIONS = {
   up: 3,
 };
 
+// El spritesheet de Attack usa un orden lateral distinto al de Idle/Walk:
+// fila 0 = frente / abajo
+// fila 1 = izquierda
+// fila 2 = derecha
+// fila 3 = espalda / arriba
+const ATTACK_DIRECTIONS = {
+  down: 0,
+  right: 2,
+  left: 1,
+  up: 3,
+};
+
 // Este spritesheet tiene una particularidad:
 // abajo, derecha e izquierda usan 12 frames de Idle,
 // pero la fila de espalda / arriba solo contiene 4 frames.
@@ -79,7 +91,8 @@ function createDirectionalAnimations(scene) {
     const idleStart = row * IDLE_COLUMNS;
     const idleFrameCount = IDLE_FRAMES_BY_DIRECTION[direction];
     const walkStart = row * WALK_FRAMES_PER_DIRECTION;
-    const attackStart = row * ATTACK_FRAMES_PER_DIRECTION;
+    const attackRow = ATTACK_DIRECTIONS[direction];
+    const attackStart = attackRow * ATTACK_FRAMES_PER_DIRECTION;
 
     scene.anims.create({
       key: `idle-${direction}`,
